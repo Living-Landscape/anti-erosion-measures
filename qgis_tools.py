@@ -200,3 +200,27 @@ def polygontoline(polygons,path_dict): #convert polygon to line
 
     return polygon_to_line['OUTPUT']
 
+def clipfields(fields, raster, path_dict):
+    output_path = createoutputpathascii(path_dict,'clip_fields')
+
+    # Calculate the extent of the raster layer
+    extent = raster.extent().toString()
+    cliped_fields = processing.run("native:extractbyextent", {
+        'INPUT': fields,
+        'EXTENT': extent,
+        'CLIP': False,
+        'OUTPUT': os.path.join(output_path, 'output.shp')
+    })
+    return cliped_fields['OUTPUT']
+
+
+def dissolvefields(fields, path_dict):
+    output_path = createoutputpathascii(path_dict,'dissolve_fields')
+    dissolve = processing.run("native:dissolve", {
+        'INPUT': fields,
+        'FIELD': [],
+        'OUTPUT': os.path.join(output_path, 'output.shp')
+    })
+
+    return dissolve['OUTPUT']
+

@@ -114,25 +114,31 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
 
         #create depresionless DEM
-        results['output1'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
+        results['depresionless_dem'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
 
         #calculate the watershed
-        results['output2'] = qtool.watershed(results['output1'],paths['tempfiles'],parameters['watershedbasins']) 
+        results['watershed'] = qtool.watershed(results['depresionless_dem'],paths['tempfiles'],parameters['watershedbasins']) 
 
-        #cut the watershed with the polygon
-        results['output3'] = qtool.cutraster(results['output2'],parameters['inputv'],paths['tempfiles'])
+        #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
+        results['clipedfields'] = qtool.clipfields(results['inputv'],parameters['inputr'],paths['tempfiles'])
+
+        #dissolve the fields ""def dissolvefields(fields, path_dict):""
+        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['tempfiles'])
+
+        #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
+        results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['dissolvedfields'],paths['tempfiles'])
 
         #polygonize the raster 
-        results['output4'] = qtool.rastertopolygon(results['output3'],paths['tempfiles'])
+        results['polygonizedwatershed'] = qtool.rastertopolygon(results['cuttedwatershed'],paths['tempfiles'])
 
         #polygon to line   
-        results['output5'] = qtool.polygontoline(results['output4'],paths['tempfiles'])
+        results['linedpolygon'] = qtool.polygontoline(results['polygonizedwatershed'],paths['tempfiles'])
 
         #buffer the DSO 
-        results['output6'] = qtool.buffering(results['output5'],paths['tempfiles'])
+        results['bufferedlines'] = qtool.buffering(results['linedpolygon'],paths['tempfiles'])
 
-        # Assuming 'results['output6']' is the path to your layer file
-        layer = QgsVectorLayer(results['output6'][1], "grass_DSO", "ogr") # [1] is the second element in OUTPUT dictionary
+        # Assuming 'results['bufferedlines']' is the path to your layer file
+        layer = QgsVectorLayer(results['bufferedlines'][1], "grass_DSO", "ogr") # [1] is the second element in OUTPUT dictionary
         
         
         # Check if layer is valid
