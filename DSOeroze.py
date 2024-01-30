@@ -1,0 +1,155 @@
+from qgis.core import QgsProcessing
+from qgis.core import QgsProcessingAlgorithm
+from qgis.core import QgsProcessingParameterNumber
+from qgis.core import QgsProcessingMultiStepFeedback
+from qgis.core import QgsProcessingParameterVectorLayer
+from qgis.core import QgsProcessingParameterRasterLayer
+from qgis.core import QgsProcessingParameterFeatureSink
+from qgis.core import QgsProcessingLayerPostProcessorInterface
+from qgis.core import QgsProcessingParameterFolderDestination
+from qgis.core import QgsProject
+from qgis.core import QgsRasterLayer, QgsSymbol, QgsSingleSymbolRenderer
+from qgis.core import QgsVectorFileWriter
+from qgis.core import QgsMapSettings, QgsVectorLayer, QgsRectangle, QgsLayoutExporter
+
+
+from PyQt5.QtGui import QColor  # Import QColor from PyQt5
+from datetime import datetime
+from PIL import Image
+from osgeo import gdal, osr
+
+import processing
+#import pandas as pd
+import geopandas as gpd
+import numpy as np
+import os 
+import time
+import sys
+import numpy as np
+import inspect
+
+
+
+
+class IsoTreelinesAlgo(QgsProcessingAlgorithm):
+ 
+    def name(self):
+        return 'DSO'
+ 
+    def displayName(self):
+        return 'DSO'
+ 
+    def group(self):
+        return 'RAGO scripts'
+ 
+    def groupId(self):
+        return 'ragoscripts'
+ 
+    def createInstance(self):
+        return type(self)()
+         
+     #dialog to select inputs and outputs    
+    def initAlgorithm(self, config=None):
+        '''self.addParameter(
+            QgsProcessingParameterVectorLayer(
+                'inputv', 'Vstupní vektor', 
+                types=[QgsProcessing.TypeVectorAnyGeometry]
+            )
+        )'''
+        self.addParameter(
+            QgsProcessingParameterRasterLayer(
+                'inputr', 'Choose input raster layer', 
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'watershedbasins','Increase number to generate more significant streams', 
+                type=QgsProcessingParameterNumber.Integer,  # Type of the number 
+                minValue=5,  # Minimum allowed value
+                maxValue=1000000,  # Maximum allowed value
+                defaultValue=30000  # Default value (optional)
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'visualize','1 = plot, 0 = no plot', 
+                type=QgsProcessingParameterNumber.Integer,  # Type of the number 
+                minValue=0,  # Minimum allowed value
+                maxValue=1,  # Maximum allowed value
+                defaultValue=1 # Default value (optional)
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterVectorLayer(
+                'inputv','Polygon to cut fields', 
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterFolderDestination(
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'water_project'), 
+            )
+            
+        )
+
+
+    
+        
+    def processAlgorithm(self, parameters, context, feedback):
+        feedback = QgsProcessingMultiStepFeedback(1, feedback)
+        results = {} #create a empty dictionary example outputs["res1"] = 42 save number 42 under name 
+        outputs = {}
+        sampledlines = {}
+        paths = {}
+
+        sys.path.append(parameters['mainfolder'])
+        print(parameters['mainfolder'])
+        import qgis_tools as qtool 
+
+        paths['tempfiles'] = qtool.createoutputpathdir(parameters['mainfolder'],'temp_files')
+
+
+
+
+        #create depresionless DEM
+        results['output1'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
+
+        #calculate the watershed
+        results['output2'] = qtool.watershed(results['output1'],paths['tempfiles'],parameters['watershedbasins']) 
+
+        #cut the watershed with the polygon
+        results['output3'] = qtool.cutraster(results['output2'],parameters['inputv'],paths['tempfiles'])
+
+        #polygonize the raster 
+        results['output4'] = qtool.rastertopolygon(results['output3'],paths['tempfiles'])
+
+        #polygon to line   
+        results['output5'] = qtool.polygontoline(results['output4'],paths['tempfiles'])
+
+        #buffer the DSO 
+        results['output6'] = qtool.buffering(results['output5'],paths['tempfiles'])
+
+        # Assuming 'results['output6']' is the path to your layer file
+        layer = QgsVectorLayer(results['output6'][1], "grass_DSO", "ogr") # [1] is the second element in OUTPUT dictionary
+        
+        
+        # Check if layer is valid
+        if not layer.isValid():
+            print("Layer failed to load!")
+        else:
+            # Add layer to QGIS
+            QgsProject.instance().addMapLayer(layer)
+
+
+
+            
+
+
+
+
+
+
+        return results
+    
