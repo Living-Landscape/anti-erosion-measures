@@ -63,9 +63,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'water_project'), 
-            )
-            
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
+            )  
         )
     
         
@@ -249,7 +248,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 simple_layer = qtool.simplifycontour(vector_layer,paths['simplifygeom'])
                 #QgsProject.instance().addMapLayer(simple_layer)
 
-                obal_layer,layer = qtool.buffering(simple_layer,paths['buffer'][1]) # create a buffer zone aroung vector line 
+                obal_layer,layer = qtool.buffering(simple_layer,paths['buffer']) # create a buffer zone aroung vector line 
 
 
                 # Set the color of the polygon
