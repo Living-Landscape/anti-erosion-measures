@@ -89,7 +89,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'water_project'), 
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
             )
             
         )
@@ -111,28 +111,53 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         paths['tempfiles'] = qtool.createoutputpathdir(parameters['mainfolder'],'temp_files')
 
 
+        # Get the input raster layer
+        raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
 
+        extent = raster_layer.extent()
+        xmin = extent.xMinimum()
+        xmax = extent.xMaximum()
+        ymin = extent.yMinimum()
+        ymax = extent.yMaximum()
+        extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
+        print(extent)
 
         #create depresionless DEM
-        results['output1'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
+        results['depresionless_dem'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
+        print('depresionless_dem created')
 
         #calculate the watershed
-        results['output2'] = qtool.watershed(results['output1'],paths['tempfiles'],parameters['watershedbasins']) 
+        results['watershed'] = qtool.watershed(results['depresionless_dem'],paths['tempfiles'],parameters['watershedbasins']) 
+        print('watershed created')
 
-        #cut the watershed with the polygon
-        results['output3'] = qtool.cutraster(results['output2'],parameters['inputv'],paths['tempfiles'])
+        #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
+        results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['tempfiles'])
+        print('clipedfields created')
+
+        #dissolve the fields ""def dissolvefields(fields, path_dict):""
+        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['tempfiles'])
+        print('dissolvedfields created')
+
+        #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
+        results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['dissolvedfields'],paths['tempfiles'])
+        print('cuttedwatershed created')
 
         #polygonize the raster 
-        results['output4'] = qtool.rastertopolygon(results['output3'],paths['tempfiles'])
+        results['polygonizedwatershed'] = qtool.rastertopolygon(results['cuttedwatershed'],paths['tempfiles'])
+        print('polygonizedwatershed created')
 
         #polygon to line   
-        results['output5'] = qtool.polygontoline(results['output4'],paths['tempfiles'])
+        results['linedpolygon'] = qtool.polygontoline(results['polygonizedwatershed'],paths['tempfiles'])
+        print('linedpolygon created')
 
         #buffer the DSO 
-        results['output6'] = qtool.buffering(results['output5'],paths['tempfiles'])
+        results['bufferedlines'] = qtool.buffering(results['linedpolygon'],paths['tempfiles'])
+        print('bufferedlines created')
+        
 
-        # Assuming 'results['output6']' is the path to your layer file
-        layer = QgsVectorLayer(results['output6'][1], "grass_DSO", "ogr") # [1] is the second element in OUTPUT dictionary
+
+        # Assuming 'results['bufferedlines']' is the path to your layer file
+        layer = QgsVectorLayer(results['bufferedlines'][1], "grass_DSO", "ogr") # [1] is the second element in OUTPUT dictionary
         
         
         # Check if layer is valid

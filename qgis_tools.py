@@ -1,5 +1,6 @@
 from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsApplication  # Add this line if QgsApplication is needed in your function
+from qgis.core import QgsRasterLayer
 from qgis.analysis import QgsNativeAlgorithms  # Add this line if needed
 from datetime import datetime
 
@@ -128,7 +129,7 @@ def filterDEM(raster, path_dict): #filter DEM from problem areas
     depresionlessDEM_output = depresionlessDEM['output']
     return depresionlessDEM_output
 
-def watershed(raster, path_dict, threshold1):
+def watershed(raster, path_dict, threshold1): #calculate watershed
     output_path = createoutputpathascii(path_dict,'watershed')
     watershed_raster = processing.run("grass7:r.watershed",\
                     {'elevation':raster,\
@@ -161,7 +162,7 @@ def watershed(raster, path_dict, threshold1):
     
     return watershed_raster['stream']
 
-def cutraster(raster,polygon,path_dict): 
+def cutraster(raster,polygon,path_dict):  #cut raster by polygon
     output_path = createoutputpathascii(path_dict,'cut_raster')
     cut_raster = processing.run("gdal:cliprasterbymasklayer",\
                     {'INPUT':raster,\
@@ -199,4 +200,27 @@ def polygontoline(polygons,path_dict): #convert polygon to line
                     'OUTPUT':os.path.join(output_path, 'output.shp')})
 
     return polygon_to_line['OUTPUT']
+
+def clipfields(fields, extent, path_dict): #extract layer part by extent
+    output_path = createoutputpathascii(path_dict,'clip_fields')
+
+    cliped_fields = processing.run("native:extractbyextent", {
+        'INPUT': fields,
+        'EXTENT':extent,
+        'CLIP': False,
+        'OUTPUT': os.path.join(output_path, 'output.shp')
+    })
+    return cliped_fields['OUTPUT']
+
+
+def dissolvefields(fields, path_dict): #dissolve layer polygons, because of the overlapping
+    output_path = createoutputpathascii(path_dict,'dissolve_fields')
+    dissolve = processing.run("native:dissolve", {
+        'INPUT': fields,
+        'FIELD': [],
+        'OUTPUT': os.path.join(output_path, 'output.shp')
+    })
+
+    return dissolve['OUTPUT']
+
 
