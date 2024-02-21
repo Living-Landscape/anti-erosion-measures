@@ -248,7 +248,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 simple_layer = qtool.simplifycontour(vector_layer,paths['simplifygeom'])
                 #QgsProject.instance().addMapLayer(simple_layer)
 
-                obal_layer,layer = qtool.buffering(simple_layer,paths['buffer']) # create a buffer zone aroung vector line 
+                # obal_layer,layer = qtool.buffering(simple_layer,paths['buffer']) # create a buffer zone aroung vector line 
 
 
                 # Set the color of the polygon
@@ -261,9 +261,12 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 #obal_layer.setRenderer(renderer)
 
                 # Add the layer to the project
+                layer = QgsVectorLayer(simple_layer, 'Lesni Pas', 'ogr')
                 
-                layer = QgsVectorLayer(layer, 'Lesni Pas', 'ogr')
-
+                layer.loadNamedStyle( os.path.join(paths['default'], 'green_dot.qml'))
+                
+                
+                
                 # Check if layer is valid
                 if not layer.isValid():
                     print("Layer failed to load!")
@@ -274,3 +277,5 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
 
         return results
+    
+    
