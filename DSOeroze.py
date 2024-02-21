@@ -151,7 +151,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         print('linedpolygon created')
 
         #buffer the DSO 
-        results['bufferedlines'] = qtool.buffering(results['linedpolygon'],paths['tempfiles'])
+        results['bufferedlines'] = qtool.buffering(results['linedpolygon'],30,paths['tempfiles'])
         print('bufferedlines created')
         
 

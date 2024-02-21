@@ -11,3 +11,18 @@ Ve skriptu DSOeroze jsou udolnice vyhledávány pomocí napočítaných odtokov�
 ==vstupy==
 DEM rastr
 polygony reprezentující půdní bloky
+
+
+Skript forest tracks: 
+
+cesty lze exportovat z  https://overpass-turbo.eu/
+příkaz pro export: 
+
+[out:json][timeout:25];
+(
+  way["highway"="track"]({{bbox}}); /* lesni cesty a polnacky */
+  way["highway"="path"]({{bbox}}); /* cesty pro pesi */
+);
+out geom;
+
+při spuštění samotného skriptu se použije DEM rastr území a exportovaná vrstva cest, 
