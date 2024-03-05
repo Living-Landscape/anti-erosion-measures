@@ -248,7 +248,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 simple_layer = qtool.simplifycontour(vector_layer,paths['simplifygeom'])
                 #QgsProject.instance().addMapLayer(simple_layer)
 
-                obal_layer,layer = qtool.buffering(simple_layer,paths['buffer']) # create a buffer zone aroung vector line 
+                distance = 10
+                obal_layer,layer = qtool.buffering(simple_layer,distance,paths['buffer']) # create a buffer zone aroung vector line 
 
 
                 # Set the color of the polygon

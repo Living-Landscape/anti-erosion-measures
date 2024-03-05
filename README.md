@@ -10,4 +10,24 @@ DEM rastr
 Ve skriptu DSOeroze jsou udolnice vyhledávány pomocí napočítaných odtokových linií pomocí nástroje GRASS, 
 ==vstupy==
 DEM rastr
+
+forest_tracks_and_paths
+polygony reprezentující půdní bloky
+
+
+Skript forest tracks: 
+
+cesty lze exportovat z  https://overpass-turbo.eu/
+příkaz pro export: 
+
+[out:json][timeout:25];
+(
+  way["highway"="track"]({{bbox}}); /* lesni cesty a polnacky */
+  way["highway"="path"]({{bbox}}); /* cesty pro pesi */
+);
+out geom;
+
+při spuštění samotného skriptu se použije DEM rastr území a exportovaná vrstva cest, 
+=======
 polygony reprezentující půdní bloky, vrstva půdních bloku je nahraná na GoogleDrivu v technickém řešení, generování protiopatření 
+ main

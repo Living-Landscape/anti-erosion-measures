@@ -96,11 +96,11 @@ def calculateshortestlines(points1,points2,path_dict): #calculate shortes lines
     shortestlines_layer = shortestlines['OUTPUT']
     return shortestlines_layer, output_path
 
-def buffering(vector, path_dict): #perform a buffer zone around vector line 
+def buffering(vector, distance, path_dict): #perform a buffer zone around vector line 
     output_path = createoutputpathascii(path_dict,'buffer_zones')
     buffer = processing.run("native:buffer",\
                     {'INPUT':vector,\
-                    'DISTANCE':10,\
+                    'DISTANCE':distance,\
                     'SEGMENTS':5,\
                     'END_CAP_STYLE':0,\
                     'JOIN_STYLE':2,\
@@ -224,3 +224,67 @@ def dissolvefields(fields, path_dict): #dissolve layer polygons, because of the 
     return dissolve['OUTPUT']
 
 
+### forest_roads.py 
+ 
+def perpendicularline(vector, path_dict): #create perpendicular line
+    output_path = createoutputpathascii(path_dict,'perpendicular_line')
+
+    perpendicular_line = processing.run("native:geometrybyexpression", {
+        'INPUT': vector,
+        'OUTPUT_GEOMETRY': 1,
+        'WITH_Z': False,
+        'WITH_M': False,
+        'EXPRESSION': 'extend (make_line ($geometry,project($geometry,2.5,radians("angle"-90))),2.5,0)',
+        'OUTPUT': os.path.join(output_path, 'output.shp')
+    })
+
+    return perpendicular_line['OUTPUT']
+
+
+
+def separatelines(vector, path_dict): #separate lines
+    output_path = createoutputpathascii(path_dict,'separated_lines')
+
+    separate_lines = processing.run("native:splitvectorlayer", {
+        'INPUT': vector,
+        'FIELD': 'ID',
+        'OUTPUT': os.path.join(output_path, 'separated_lines_folder')
+    })
+
+    return separate_lines['OUTPUT'] # return a folder with separated lines
+
+
+def convertprojection(vector, path_dict): #convert projection
+    output_path = createoutputpathascii(path_dict,'converted_projection')
+
+    convert_projection = processing.run("native:reprojectlayer", {
+        'INPUT': vector,
+        'TARGET_CRS': 'EPSG:5514',
+        'OUTPUT': os.path.join(output_path, 'output.shp')
+    })
+
+    return convert_projection['OUTPUT']
+
+def pointsalongline1m(vector,path_dict): #sample point along vector line 
+    output_path = path_dict
+    random_prefix = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) # 10char ascii random string
+
+    points = processing.run("native:pointsalonglines",\
+                   {'INPUT':vector,\
+                    'DISTANCE':1,\
+                    'START_OFFSET':0,\
+                    'END_OFFSET':0,\
+                    'OUTPUT':os.path.join(output_path, random_prefix + 'output.gpkg')})
+    points_layer = points['OUTPUT']
+    return points_layer
+
+def rastersampling(raster, vector, path_dict): #sample raster by vector
+    output_path = path_dict
+    random_prefix = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) # 10char ascii random string
+
+    sampled_raster = processing.run("native:rastersampling",\
+                   {'INPUT':vector,\
+                    'RASTERCOPY':raster,\
+                    'COLUMN_PREFIX':'ELEV_',\
+                    'OUTPUT':os.path.join(output_path, random_prefix + 'output.gpkg')})
+    return sampled_raster
