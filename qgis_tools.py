@@ -50,6 +50,14 @@ def simplifycontour(contour,path_dict): #simplify contour
 
     return simplifyed_contour_layer
 
+def green_dot_line(layer,path_dict): #create green dot line
+   stylised = processing.run("native:setlayerstyle", {'INPUT': layer,'STYLE':os.path.join(path_dict, 'green_dot.qml')})
+   
+   processing.run("native:setlayerstyle", {'INPUT':layer,
+                                           'STYLE':os.path.join(path_dict, 'green_dot.qml')})
+   return stylised
+   
+    
 def contourelevation(raster,path_dict,elevation): #calculate a single countour in a defined elevation
     output_path = createoutputpathascii(path_dict,'countour')
     contour = processing.run("gdal:contour",\
@@ -85,6 +93,7 @@ def deletecolumns(points,path_dict): #delete column in atribute table
                     'OUTPUT': os.path.join(output_path, 'output.shp')})
     deletedcolumns_table = deletedcolumns['OUTPUT']
     return deletedcolumns_table
+
 
 def calculateshortestlines(points1,points2,path_dict): #calculate shortes lines
     output_path = createoutputpathascii(path_dict,'calculated_shortest_lines')
