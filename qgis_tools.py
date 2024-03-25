@@ -226,21 +226,36 @@ def dissolvefields(fields, path_dict): #dissolve layer polygons, because of the 
 
 ### forest_roads.py 
  
-def perpendicularline(vector, path_dict): #create perpendicular line
+def perpendicularline(vector, path_dict,angle): #create perpendicular line
     output_path = createoutputpathascii(path_dict,'perpendicular_line')
-
+    s = f'extend (make_line ($geometry,project($geometry,2.5,radians("angle"-{angle}))),2.5,0)'
     perpendicular_line = processing.run("native:geometrybyexpression", {
         'INPUT': vector,
         'OUTPUT_GEOMETRY': 1,
         'WITH_Z': False,
         'WITH_M': False,
-        'EXPRESSION': 'extend (make_line ($geometry,project($geometry,2.5,radians("angle"-90))),2.5,0)',
-        'OUTPUT': os.path.join(output_path, 'output.shp')
+        #'EXPRESSION': 'extend (make_line ($geometry,project($geometry,2.5,radians("angle"-60))),2.5,0)',
+        'EXPRESSION': s,
+        'OUTPUT': os.path.join(output_path, 'output.gpkg')
     })
 
     return perpendicular_line['OUTPUT']
 
+def finalperpendicularline(vector, path_dict,angle): #create perpendicular line
+    output_path = path_dict
+    random_prefix = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) # 10char ascii random string
+    s = f'extend (make_line ($geometry,project($geometry,2.5,radians("angle"-{angle}))),2.5,0)'
+    perpendicular_line = processing.run("native:geometrybyexpression", {
+        'INPUT': vector,
+        'OUTPUT_GEOMETRY': 1,
+        'WITH_Z': False,
+        'WITH_M': False,
+        #'EXPRESSION': 'extend (make_line ($geometry,project($geometry,2.5,radians("angle"-60))),2.5,0)',
+        'EXPRESSION': s,
+        'OUTPUT': os.path.join(output_path, random_prefix + 'output.gpkg')
+    })
 
+    return perpendicular_line['OUTPUT']
 
 def separatelines(vector, path_dict): #separate lines
     output_path = createoutputpathascii(path_dict,'separated_lines')
@@ -278,13 +293,25 @@ def pointsalongline1m(vector,path_dict): #sample point along vector line
     points_layer = points['OUTPUT']
     return points_layer
 
+def pointsalonglinecustom(vector,path_dict,len): #sample point along vector line 
+    output_path = path_dict
+    random_prefix = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) # 10char ascii random string
+    points = processing.run("native:pointsalonglines",\
+                   {'INPUT':vector,\
+                    'DISTANCE':len,\
+                    'START_OFFSET':0,\
+                    'END_OFFSET':0,\
+                    'OUTPUT':os.path.join(output_path,random_prefix + 'output.gpkg')})
+    points_layer = points['OUTPUT']
+    return points_layer
+
 def rastersampling(raster, vector, path_dict): #sample raster by vector
     output_path = path_dict
     random_prefix = ''.join(random.choices(string.ascii_letters + string.digits, k=10)) # 10char ascii random string
-
     sampled_raster = processing.run("native:rastersampling",\
                    {'INPUT':vector,\
                     'RASTERCOPY':raster,\
                     'COLUMN_PREFIX':'ELEV_',\
-                    'OUTPUT':os.path.join(output_path, random_prefix + 'output.gpkg')})
+                    'OUTPUT':os.path.join(output_path, random_prefix +'output.gpkg')})
+    
     return sampled_raster
