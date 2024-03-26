@@ -315,3 +315,14 @@ def rastersampling(raster, vector, path_dict): #sample raster by vector
                     'OUTPUT':os.path.join(output_path, random_prefix +'output.gpkg')})
     
     return sampled_raster
+
+
+#mokrady
+def fielddifference(bufferline,forest,path_dict): #difference between two fields
+    output_path = createoutputpathdir(path_dict,'field_difference')
+    field_difference = processing.run("native:difference", {
+        'INPUT': bufferline,
+        'OVERLAY': forest,
+        'OUTPUT': os.path.join(output_path, 'output.shp'),
+        'GRID_SIZE':None})
+    return field_difference['OUTPUT']
