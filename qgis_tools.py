@@ -86,6 +86,23 @@ def deletecolumns(points,path_dict): #delete column in atribute table
     deletedcolumns_table = deletedcolumns['OUTPUT']
     return deletedcolumns_table
 
+def validatelayer(vector, path_dict): #validate layer
+    output_path = createoutputpathascii(path_dict, 'validated_layer')
+    validated_layer = processing.run("native:fixgeometries",\
+                    {'INPUT':vector,\
+                    'OUTPUT':os.path.join(output_path, 'output.shp')})
+    return validated_layer['OUTPUT']
+    
+def offsetline(vector, distance, path_dict): #offset line
+    output_path = createoutputpathascii(path_dict, 'offset_line')
+    offset_line = processing.run("native:offsetline",\
+                    {'INPUT':vector,\
+                    'DISTANCE':distance,\
+                    'JOIN_STYLE':0,\
+                    'MITER_LIMIT':2,\
+                    'OUTPUT':os.path.join(output_path, 'output.shp')})
+    return offset_line['OUTPUT']
+
 def calculateshortestlines(points1,points2,path_dict): #calculate shortes lines
     output_path = createoutputpathascii(path_dict,'calculated_shortest_lines')
     shortestlines = processing.run("native:shortestline",\
@@ -110,6 +127,26 @@ def buffering(vector, distance, path_dict): #perform a buffer zone around vector
     buffer_output = buffer['OUTPUT'] 
     return buffer, buffer_output
 
+def multipartpartpolygon(vector, path_dict): #convert single part polygon to multipart polygon
+    output_path = createoutputpathdir(path_dict,'single_to_multi_part')
+    processing.run("native:multiparttosingleparts",\
+                    {'INPUT':vector,\
+                    'OUTPUT':os.path.join(output_path, 'output.shp')})
+    return output_path
+
+def separatepolygons(vector, path_dict): #separate every polygons in a layer
+    output_path = createoutputpathdir(path_dict,'separated_polygons')
+
+    separate_lines = processing.run("native:splitvectorlayer", {
+        'INPUT': vector,
+        'FIELD': 'IDX',
+        'OUTPUT': output_path
+    })
+
+    return separate_lines['OUTPUT'] # return a folder with separated lines
+
+
+# DSOeroze.py
 def filterDEM(raster, path_dict): #filter DEM from problem areas
     output_path = createoutputpathascii(path_dict,'filtered_DEM')
 
@@ -316,7 +353,6 @@ def rastersampling(raster, vector, path_dict): #sample raster by vector
     
     return sampled_raster
 
-
 #mokrady
 def fielddifference(bufferline,forest,path_dict): #difference between two fields
     output_path = createoutputpathdir(path_dict,'field_difference')
@@ -326,3 +362,5 @@ def fielddifference(bufferline,forest,path_dict): #difference between two fields
         'OUTPUT': os.path.join(output_path, 'output.shp'),
         'GRID_SIZE':None})
     return field_difference['OUTPUT']
+
+
