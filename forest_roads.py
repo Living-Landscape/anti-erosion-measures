@@ -14,7 +14,7 @@ from qgis.core import QgsMapSettings, QgsVectorLayer, QgsRectangle, QgsLayoutExp
 
 from qgis.analysis import QgsRasterCalculator, QgsRasterCalculatorEntry
 from qgis.utils import iface
-
+from geopandas import GeoDataFrame
 from qgis.core import QgsField
 
 
@@ -77,7 +77,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'jakub', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
             )
             
         )
@@ -119,6 +119,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         
         # Get a list of all files in the source directory
         files = os.listdir(source_dir)
+        destination_dir_points = qtool.createoutputpathdir(paths['tempfiles'],'points')
 
         print('starting loop over short lines')
         # Loop over the files
@@ -153,6 +154,9 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 rows = len(gdf)
                 segment_slope = np.array([])
                 
+
+
+                
                 # loop over the rows
                 for i in range(1,rows):
                     dx_distance = gdf.at[i, 'distance']-gdf.at[i-1, 'distance']  # 1m
@@ -184,7 +188,15 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         d3_distance = 0
                         slope = 0
                         segment_slope = np.array([])
-                        print('point was created')
+                        print('point1 was created')
+                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                        # Create a new GeoDataFrame for the current point
+                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                        # Define the output file path
+                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                        # Save the current point to a GeoPackage file
+                        current_point.to_file(output_file_path, driver="GPKG")
 
                     elif d3_distance > 23 and slope > 0.14: #  (slope_ix > 0.14 or slope > 0.14):
                         elev_ini = gdf.at[i, 'ELEV_1']
@@ -192,7 +204,15 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         d3_distance = 0
                         slope = 0
                         segment_slope = np.array([])
-                        print('point was created')
+                        print('point2 was created')
+
+                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                        # Create a new GeoDataFrame for the current point
+                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                        # Define the output file path
+                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                        # Save the current point to a GeoPackage file
+                        current_point.to_file(output_file_path, driver="GPKG")                        
                         
                     elif d3_distance > 27 and slope > 0.12: #  (slope_ix > 0.12 or slope > 0.12):
                         elev_ini = gdf.at[i, 'ELEV_1']
@@ -200,15 +220,31 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         d3_distance = 0
                         slope = 0
                         segment_slope = np.array([])
-                        print('point was created')
-                        
+                        print('point3 was created')
+
+                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                         # Create a new GeoDataFrame for the current point
+                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                        # Define the output file path
+                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                        # Save the current point to a GeoPackage file
+                        current_point.to_file(output_file_path, driver="GPKG")
+
                     elif d3_distance > 32 and slope > 0.10:  # (slope_ix > 0.10 or slope > 0.10):
                         elev_ini = gdf.at[i, 'ELEV_1']
                         distance_ini = gdf.at[i, 'distance']
                         d3_distance = 0
                         slope = 0
                         segment_slope = np.array([])
-                        print('point was created')
+                        print('point4 was created')
+                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                        # Create a new GeoDataFrame for the current point
+                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                        # Define the output file path
+                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                        # Save the current point to a GeoPackage file
+                        current_point.to_file(output_file_path, driver="GPKG")
    
                     elif d3_distance > 40 and slope > 0.08: # (slope_ix > 0.08 or slope > 0.08)
                         elev_ini = gdf.at[i, 'ELEV_1']
@@ -216,20 +252,33 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         d3_distance = 0
                         slope = 0
                         segment_slope = np.array([])
-                        print('point was created')
-        
+                        print('point5 was created')
+                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                        # Create a new GeoDataFrame for the current point
+                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                        # Define the output file path
+                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                        # Save the current point to a GeoPackage file
+                        current_point.to_file(output_file_path, driver="GPKG")
+
                     elif d3_distance > 50 and  slope > 0.06: #  (slope_ix > 0.06 or slope > 0.06)
                         elev_ini = gdf.at[i, 'ELEV_1']
                         distance_ini = gdf.at[i, 'distance']
                         d3_distance = 0
                         slope = 0
                         segment_slope = np.array([])
-                        print('point was created')
+                        print('point6 was created')
                         #print whole i row
                         #print(gdf.iloc[i])
                         # append the row to the forest points dataframe 
                         forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
-                        
+
+                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                        # Define the output file path
+                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                        # Save the current point to a GeoPackage file
+                        current_point.to_file(output_file_path, driver="GPKG")
 
 
                     elif d3_distance > 50 and (slope_ix < 0.06 or slope < 0.06): # maximum distance between points but without sufficient slope - shift the initial point by 1m
@@ -244,17 +293,71 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         #print('point was deleted')
 
         # Convert the DataFrame to a GeoDataFrame
-        print(forest_points.columns)
+        print('tablecolumnsnames',forest_points.columns)
         new_gdf = gpd.GeoDataFrame(forest_points, geometry='geometry')  # Replace 'geometry' with your actual geometry column
 
         # Save the new GeoDataFrame as a GPKG file
         save_path = os.path.join(paths['tempfiles'], 'filtered_points.gpkg')
         new_gdf.to_file(save_path, driver='GPKG')
-        print(new_gdf)
+        print('table',new_gdf)
 
-        
+
+
+
+        paths['perpendicularlines'] = qtool.createoutputpathdir(paths['tempfiles'],'perpendicular_lines')
+        paths['finallines'] = qtool.createoutputpathdir(paths['tempfiles'],'final_lines')
+        #generate lines with angle 
+        files = os.listdir(destination_dir_points)
+        print('starting loop over selected points')
+        # Loop over the files
+        for file in files:
+            # Check if the file is a geopackage file
+            if file.endswith('.gpkg'):
+                # Construct the full file path
+                file_path = os.path.join(destination_dir_points, file)
+
+                #generate lines with angle 
+                angle_90_line = qtool.perpendicularline(file_path,paths['perpendicularlines'],90)
+                angle_60_line = qtool.perpendicularline(file_path,paths['perpendicularlines'],60)
+            
+                points_90_line = qtool.pointsalonglinecustom(angle_90_line, paths['perpendicularlines'],4.9)
+                points_60_line = qtool.pointsalonglinecustom(angle_60_line, paths['perpendicularlines'],4.9)
+
+                sampled_90_lines = qtool.rastersampling(parameters['inputr'],points_90_line,paths['perpendicularlines'])
+                sampled_60_lines = qtool.rastersampling(parameters['inputr'],points_60_line,paths['perpendicularlines'])
+
+                # Load the geopackage data
+                s90 = gpd.read_file(sampled_90_lines['OUTPUT'])
+                s60 = gpd.read_file(sampled_60_lines['OUTPUT'])
+                # calculate delta h 
+                dhs90 = s90.at[0, 'ELEV_1_2'] - s90.at[1, 'ELEV_1_2']
+                dhs60 = s60.at[0, 'ELEV_1_2'] - s60.at[1, 'ELEV_1_2']
+                print('dhs90=',dhs90), print('dhs60=',dhs60)
+
+                if dhs90 > 0.5 or dhs60 > 0.5:
+                    fline = qtool.finalperpendicularline(file_path,paths['finallines'],60)
+                else:
+                    fline = qtool.finalperpendicularline(file_path,paths['finallines'],120)
+
+        # Get a list of all GeoPackage files in the directory
+        gpkg_files = [f for f in os.listdir(paths['finallines']) if f.endswith('.gpkg')]
+
+        # Read the first file to initialize the GeoDataFrame
+        gdf = gpd.read_file(os.path.join(paths['finallines'], gpkg_files[0]))
+
+        # Loop over the rest of the files
+        for file in gpkg_files[1:]:
+            # Read the current file
+            current_gdf = gpd.read_file(os.path.join(paths['finallines'], file))
+            
+            # Concatenate the current GeoDataFrame with the main GeoDataFrame
+            gdf = gpd.pd.concat([gdf, current_gdf])          
+
+        # Save the GeoDataFrame to a new GeoPackage file
+        gdf.to_file(os.path.join(paths['finallines'], 'all_lines.gpkg'), driver='GPKG')
+
         #generate penperdicular lines 
-        results['penperdicularlines'] = qtool.perpendicularline(save_path,paths['tempfiles'])
+        results['penperdicularlines'] = qtool.perpendicularline(save_path,paths['tempfiles'],60) # last value is angle of line
 
         #generate buffer zone 
         results['terawave'] = qtool.buffering(results['penperdicularlines'],1,paths['tempfiles'])
