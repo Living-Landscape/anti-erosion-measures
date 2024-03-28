@@ -3,12 +3,15 @@ from qgis.core import QgsApplication  # Add this line if QgsApplication is neede
 from qgis.core import QgsRasterLayer
 from qgis.analysis import QgsNativeAlgorithms  # Add this line if needed
 from datetime import datetime
+from osgeo import gdal
 
 import os 
 import processing
 import string
 import random 
 import time
+import numpy as np
+
 
 def createoutputpathdir(pre_path,folder_name):  # Create a folder name based on the timestamp and defined name
     
@@ -363,4 +366,14 @@ def fielddifference(bufferline,forest,path_dict): #difference between two fields
         'GRID_SIZE':None})
     return field_difference['OUTPUT']
 
+#raster pixels to points 
+def rasterpixelstopoints(raster,path_dict): #convert raster to points
+    output_path = createoutputpathascii(path_dict,'raster_to_points')
+    raster_to_points = processing.run("native:pixelstopoints",\
+                    {'INPUT_RASTER':raster,\
+                    'RASTER_BAND':1,\
+                    'FIELD_NAME':'VALUE',\
+                    'OUTPUT':os.path.join(output_path, 'output.gpkg')})
+    
+    return raster_to_points['OUTPUT']
 
