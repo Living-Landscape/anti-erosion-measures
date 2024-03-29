@@ -41,10 +41,10 @@ import math
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
  
     def name(self):
-        return 'DSO'
+        return 'forest roads'
  
     def displayName(self):
-        return 'DSO'
+        return 'forest roads'
  
     def group(self):
         return 'RAGO scripts'

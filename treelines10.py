@@ -105,6 +105,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         paths['shorteslines'] = qtool.createoutputpathdir(paths['tempfiles'],'shortest_lines')
         paths['validlines'] = qtool.createoutputpathdir(paths['tempfiles'],'valiedated_lines')
         paths['offsetlines'] = qtool.createoutputpathdir(paths['tempfiles'],'offseted_lines')
+        paths['treelines'] = qtool.createoutputpathdir(paths['tempfiles'],'created_treelines')
 
         # Get the input raster layer to define layer extent
         raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
@@ -157,7 +158,9 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         files = os.listdir(results['separated_polygons'])
         ### calculation for one input raster ### 
+        counter = 0
         for file in files:
+            
             print('soubor',file)
             poly_path = os.path.join(results['separated_polygons'],file)
 
@@ -215,7 +218,6 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             dist_max = 130 # initial maximal distance for tree lines in low slope land
             dist_min = 110 # initial minimal distance for tree lines in low slope land
 
-            
             while elev_new > dem_min+5: # condition to create new tree lines to the land lowest area
                 while dis_tree_line > dist_max or dis_tree_line < dist_min:
                     iso_b = str(elev_new)
@@ -267,59 +269,69 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                     # Calculate the 3D distance using the pythagoras formula
                     gdf["result"] = np.sqrt(gdf["distance"]**2 - dif_squared)
                     dis_tree_line = round(gdf["result"].mean()) # get the mean value for new countour
-
-                    #calculate slope 
-                    slope_array = np.divide(dif,gdf["distance"])
-                    slope = np.mean(slope_array)
-                    #print(slope_array)
-                    print(dis_tree_line)
-                    print(slope)
-                    #time.sleep(1)
-                    if attemt_counter > 50:
-                        exit()
-                    elif attemt_counter > 25:
-                        sense = 0.001
-                    elif attemt_counter > 20:
-                        sense = 0.005
-                    elif attemt_counter > 10:
-                        sense = 0.01
-                    elif attemt_counter < 10:
-                        sense = 0.02
                     
-                    if slope < 0.07:
-                        dist_max = 125 
-                        dist_min = 115
-                        inc = (dis_tree_line - 120)*sense
-                    elif slope > 0.07 and slope < 0.12:
-                        dist_max = 65
-                        dist_min = 55
-                        inc = (dis_tree_line - 60)*sense
-                    elif slope >0.12:
-                        dist_max = 45
-                        dist_min = 35
-                        inc = (dis_tree_line - 40)*sense
+                    if dis_tree_line < dist_max and dis_tree_line > dist_min:
+                        break
+                    else:
+                        #calculate slope 
+                        slope_array = np.divide(dif,gdf["distance"])
+                        slope = np.mean(slope_array)
+                        #print(slope_array)
+                        print(dis_tree_line)
+                        print(slope)
+                        #time.sleep(0.5)
+                        print('attempt counter',attemt_counter)
+                        if attemt_counter > 30:
+                            sense = 0.001
+                            time.sleep(0.5)
+                        elif attemt_counter > 15:
+                            sense = 0.003
+                        elif attemt_counter > 10:
+                            sense = 0.007
+                        elif attemt_counter > 5:
+                            sense = 0.01
+                        elif attemt_counter < 5:
+                            sense = 0.02
+                        
+                        if slope < 0.07:
+                            dist_max = 125 
+                            dist_min = 115
+                            inc = (dis_tree_line - 120)*sense
+                        elif slope > 0.07 and slope < 0.12:
+                            dist_max = 65
+                            dist_min = 55
+                            inc = (dis_tree_line - 60)*sense
+                        elif slope >0.12:
+                            dist_max = 45
+                            dist_min = 35
+                            inc = (dis_tree_line - 40)*sense
 
-                    # decision making
-                    attemt_counter = attemt_counter + 1    
-                    inc = abs(inc)
-                    print('inc',inc)
-                    print('attemt_counter',attemt_counter)
-                    print('slope',slope)
-                    print('dis_tree_line',dis_tree_line)
-                    print('dist_max',dist_max)
-                    print('dist_min',dist_min)
+                        # decision making
+                        attemt_counter = attemt_counter + 1    
+                        inc = abs(inc)
+                        print('inc',inc)
+                        print('attemt_counter',attemt_counter)
+                        print('slope',slope)
+                        print('dis_tree_line',dis_tree_line)
+                        print('dist_max',dist_max)
+                        print('dist_min',dist_min)
 
-                    #time.sleep(0.7)
-                    if dis_tree_line > dist_max: 
-                        elev_new = elev_new + inc
-                    elif dis_tree_line < dist_min: 
-                        elev_new = elev_new - inc
-                    
-                    ###layer = QgsVectorLayer(results['Output4'], 'Layer Name', 'ogr')
-                    ###QgsProject.instance().addMapLayer(layer)
+                        #time.sleep(0.7)
+                        if attemt_counter > 40:
+                            dis_tree_line = dist_max/2 + dist_min/2
+                        else:
+                            if dis_tree_line > dist_max: 
+                                elev_new = elev_new + inc
+                            elif dis_tree_line < dist_min: 
+                                elev_new = elev_new - inc
+                        
+                        ###layer = QgsVectorLayer(results['Output4'], 'Layer Name', 'ogr')
+                        ###QgsProject.instance().addMapLayer(layer)
                 else:
                     print('layer complete')
+                    time.sleep(0.5)
                     attemt_counter = 0
+                    counter += 1
                     elev_new = elev_new - 5
                     dis_tree_line = 200 # just a constant for new iteration 
                     isolines['isoline1'] = isolines['isoline2'] # swiching the targert and source countour
@@ -334,15 +346,58 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                     simplified_layer1 = qtool.offsetline(valid_line, 30, paths['offsetlines'])
                     simplified_layer2 = qtool.offsetline(simplified_layer1, -30, paths['offsetlines'])
 
+                    # Save the layer
+                    filename = f"{counter}.gpkg"
+                    #create a output path directory for the treelines 
+                    
+                    output_path = os.path.join(paths['treelines'], filename)
+                    simplified_layer2_gdf = gpd.read_file(simplified_layer2)
+                    simplified_layer2_gdf.to_file(output_path, driver='GPKG')
 
-                    layer = QgsVectorLayer(simplified_layer2, 'Lesni Pas', 'ogr')
+        import pandas as pd
 
-                    # Check if layer is valid
-                    if not layer.isValid():
-                        print("Layer failed to load!")
-                    else:
-                        # Add layer to QGIS
-                        QgsProject.instance().addMapLayer(layer)
+        # Get a list of all files in the directory
+        files = os.listdir(paths['treelines'])
+
+        # Initialize an empty list to store the GeoDataFrames
+        layers = []
+
+        # Loop through the files
+        for file in files:
+            # Create the full file path
+            file_path = os.path.join(paths['treelines'], file)
+
+            # Read the file into a GeoDataFrame
+            layer = gpd.read_file(file_path)
+
+            # Add the GeoDataFrame to the list
+            layers.append(layer)
+
+            # Concatenate all GeoDataFrames into one
+            all_layers = pd.concat(layers, ignore_index=True)
+
+        # Save the all_layers GeoDataFrame to a file
+        output_path = os.path.join(paths['treelines'], 'all_layers.gpkg')
+        all_layers.to_file(output_path, driver='GPKG')
+
+        # Create a new QgsVectorLayer
+        layer = QgsVectorLayer(output_path, 'All Layers', 'ogr')
+
+        # Check if layer is valid
+        if not layer.isValid():
+            print("Layer failed to load!")
+        else:
+            # Add layer to QGIS
+            QgsProject.instance().addMapLayer(layer)
+                    
+                    #layer = QgsVectorLayer(simplified_layer2, 'Lesni Pas', 'ogr')
+
+                    ## Check if layer is valid
+                    #if not layer.isValid():
+                    #    print("Layer failed to load!")
+                    #else:
+                    #    # Add layer to QGIS
+                    #    QgsProject.instance().addMapLayer(layer)
                     
 
                     
@@ -361,6 +416,6 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                     #    QgsProject.instance().addMapLayer(layer)
                     
 
-
+        
 
         return results

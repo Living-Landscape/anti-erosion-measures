@@ -88,7 +88,17 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 type=QgsProcessingParameterNumber.Integer,  # Type of the number 
                 minValue=0,  # Minimum allowed value
                 maxValue=1,  # Maximum allowed value
-                defaultValue=1 # Default value (optional)
+                defaultValue=1 # Default value (optional)   
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'limit_slope','minimal slope for DSO segment, lower slope segments will be filtered out',
+                type=QgsProcessingParameterNumber.Double,  # Type of the number 
+                minValue=0,  # Minimum allowed value
+                maxValue=1,  # Maximum allowed value
+                defaultValue=0.05 # Default value (optional)   limits['slope']
             )
         )
 
@@ -121,22 +131,26 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         paths['tempfiles'] = qtool.createoutputpathdir(parameters['mainfolder'],'temp_files')
         paths['gpkgs'] = qtool.createoutputpathdir(paths['tempfiles'],'separated_points')
+        limit_slope = self.parameterAsDouble(parameters, 'limit_slope', context)
+
+        # Define the destination path for filtered raster files with greater slope
+        dest_path = qtool.createoutputpathdir(paths['tempfiles'],'filtered_raster')
 
         # Get the value of the checkbox
         checkbox_value = self.parameterAsBool(parameters, self.CHECKBOX_PARAMETER, context)
 
+        raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
+
+        extent = raster_layer.extent()
+        xmin = extent.xMinimum()
+        xmax = extent.xMaximum()
+        ymin = extent.yMinimum()
+        ymax = extent.yMaximum()
+        extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
+        print(extent)
+
         if checkbox_value:
-            # Get the input raster layer
-            raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
-
-            extent = raster_layer.extent()
-            xmin = extent.xMinimum()
-            xmax = extent.xMaximum()
-            ymin = extent.yMinimum()
-            ymax = extent.yMaximum()
-            extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
-            print(extent)
-
+            
             #create depresionless DEM
             results['depresionless_dem'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
             print('depresionless_dem created')
@@ -145,19 +159,21 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             results['watershed'] = qtool.watershed(results['depresionless_dem'],paths['tempfiles'],parameters['watershedbasins']) 
             print('watershed created')
 
-            #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
-            results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['tempfiles'])
-            print('clipedfields created')
-
-            #dissolve the fields ""def dissolvefields(fields, path_dict):""
-            results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['tempfiles'])
-            print('dissolvedfields created')
-
-            #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
-            results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['dissolvedfields'],paths['tempfiles'])
-            print('cuttedwatershed created')
         else: 
-            results['cuttedwatershed'] = parameters['inputwatershed']
+            #for not calculating watershed 
+            results['watershed'] = parameters['inputwatershed']
+
+        #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
+        results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['tempfiles'])
+        print('clipedfields created')
+
+        #dissolve the fields ""def dissolvefields(fields, path_dict):""
+        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['tempfiles'])
+        print('dissolvedfields created')
+
+        #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
+        results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['dissolvedfields'],paths['tempfiles'])
+        print('cuttedwatershed created')
 
         #raster pixels to points
         results['rasterpixels'] = qtool.rasterpixelstopoints(results['cuttedwatershed'],paths['tempfiles'])
@@ -213,30 +229,58 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             #print(distances)
             # If the average slope is less than the threshold...
             # If the average slope is less than the threshold...
-            if avg_slope > 0.05:
-                # Define the destination path
-                dest_path = qtool.createoutputpathdir(paths['tempfiles'],'filtered_raster')
+            if avg_slope > limit_slope:
+                
 
                 # Copy the file
                 shutil.copy(os.path.join(paths['gpkgs'], gpkg_file), dest_path)
 
-        
+        import pandas as pd
+
+        # Get a list of all files in the directory
+        files = os.listdir(dest_path)
+
+        # Initialize an empty list to store the GeoDataFrames
+        layers = []
+
+        # Loop through the files
+        for file in files:
+            # Create the full file path
+            file_path = os.path.join(dest_path, file)
+
+            # Read the file into a GeoDataFrame
+            layer = gpd.read_file(file_path)
+
+            # Add the GeoDataFrame to the list
+            layers.append(layer)
+
+            # Concatenate all GeoDataFrames into one
+            all_layers = pd.concat(layers, ignore_index=True)
+
+        # Save the all_layers GeoDataFrame to a file
+        filtered_points_DSO = os.path.join(dest_path, 'all_layers.gpkg') # filtered_points_DSO is the path to gpkg file 
+        all_layers.to_file(filtered_points_DSO, driver='GPKG') # save the data
+
         #polygonize the raster 
-        results['polygonizedwatershed'] = qtool.rastertopolygon(results['cuttedwatershed'],paths['tempfiles'])
-        print('polygonizedwatershed created')
+        #results['polygonizedwatershed'] = qtool.rastertopolygon(results['cuttedwatershed'],paths['tempfiles'])
+        #print('polygonizedwatershed created')
 
         #polygon to line   
-        results['linedpolygon'] = qtool.polygontoline(results['polygonizedwatershed'],paths['tempfiles'])
-        print('linedpolygon created')
+        #results['linedpolygon'] = qtool.polygontoline(results['polygonizedwatershed'],paths['tempfiles'])
+        #print('linedpolygon created')
 
         #buffer the DSO 
-        results['bufferedlines'] = qtool.buffering(results['linedpolygon'],30,paths['tempfiles'])
+        results['bufferedpoints'] = qtool.buffering(filtered_points_DSO,30,paths['tempfiles'])
         print('bufferedlines created')
+
+        #dissolve the fields ""def dissolvefields(fields, path_dict):""
+        results['dissolvedpolygonpoints'] = qtool.dissolvefields(results['bufferedpoints'][1],dest_path)
+        print('dissolvedfields created')        
         
 
 
-        # Assuming 'results['bufferedlines']' is the path to your layer file
-        layer = QgsVectorLayer(results['bufferedlines'][1], "grass_DSO", "ogr") # [1] is the second element in OUTPUT dictionary
+        # add layer to qgis
+        layer = QgsVectorLayer(results['dissolvedpolygonpoints'], "DSO_grass", "ogr") # [1] is the second element in OUTPUT dictionary
         
         
         # Check if layer is valid
