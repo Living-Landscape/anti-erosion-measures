@@ -19,11 +19,11 @@ Ve skriptu DSOeroze jsou udolnice vyhledávány pomocí napočítaných odtokov�
 
 
 ## Forest Tracks and Paths
-forest_tracks_and_paths
-polygony reprezentující půdní bloky
+- forest_tracks_and_paths
+- polygony reprezentující půdní bloky
 
 
-Script forest tracks: 
+### Script forest tracks: 
 
 cesty lze exportovat z  https://overpass-turbo.eu/
 příkaz pro export: 
@@ -35,6 +35,6 @@ příkaz pro export:
 );
 out geom;
 
-při spuštění samotného skriptu se použije DEM rastr území a exportovaná vrstva cest, 
+při spuštění samotného scriptu se použije DEM rastr území a exportovaná vrstva cest, 
 =======
 polygony reprezentující půdní bloky, vrstva půdních bloku je nahraná na GoogleDrivu v technickém řešení, generování protiopatření 
