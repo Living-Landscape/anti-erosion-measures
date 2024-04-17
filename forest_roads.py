@@ -37,7 +37,6 @@ import math
 
 
 
-
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
  
     def name(self):
@@ -77,7 +76,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'jakub', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'Kuba-work', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
             )
             
         )
@@ -154,22 +153,29 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 rows = len(gdf)
                 segment_slope = np.array([])
                 
-
-
+                elev = gdf['ELEV_1'].to_numpy()
+                distance = gdf['distance'].to_numpy()
+                dx_distances = np.diff(distance)  # 1m
+                dz_elevs = np.diff(elev)  # elevation difference between points i and i-1
+                dd3_distances = np.sqrt(dx_distances**2 + dz_elevs**2)  # 3D distance between points i and i-1
+                dsslopes = dz_elevs/dx_distances  # slope between points i and i-1
                 
+                start_i = 0
+                print(dx_distances)
+                time.sleep(10)
                 # loop over the rows
                 for i in range(1,rows):
-                    dx_distance = gdf.at[i, 'distance']-gdf.at[i-1, 'distance']  # 1m
-                    dz_elev = gdf.at[i, 'ELEV_1']- gdf.at[i-1, 'ELEV_1'] # elevation difference between points i and i-1
-                    dd3_distance = math.sqrt(dx_distance**2 + dz_elev**2) # 3D distance between points i and i-1
-                    d3_distance = d3_distance + dd3_distance  # add the 3D distance to the total 3d distance
+                    dx_distance = dx_distances[i-1]  # 1m
+                    dz_elev = dz_elevs[i-1]# elevation difference between points i and i-1
+                    dd3_distance = dd3_distances[i-1] # 3D distance between points i and i-1
+                    d3_distance = d3_distance + dd3_distance# add the 3D distance to the total 3d distance
 
-                    dslope = dz_elev/dx_distance  # slope between points i and i-1 
+                    dslope = dsslopes[i-1] # slope between points i and i-1 
                     segment_slope = np.append(segment_slope,dslope)  # add the slope to the array
                  # calculate the average slope
                     slope = abs(np.mean(segment_slope))
 
-                    slope_ix = gdf.at[i, 'ELEV_1'] - elev_ini/gdf.at[i, 'distance'] - distance_ini #slope between the first point and the current point
+                    slope_ix = (dz_elev - elev_ini)/(dx_distance - distance_ini) #slope between the first point and the current point
 
                     #print('actual elev', gdf.at[i, 'ELEV_1'],'///','elev_ini',elev_ini,'///','actual distance', gdf.at[i, 'distance'],'///','distance_ini',distance_ini)
 
@@ -177,8 +183,6 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
                     #time.sleep()  # Pause for 1 second
 
-                
-                 # calculate the average slope
                     if i == rows:
                         print('end of the line')
                         break
@@ -284,6 +288,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                     elif d3_distance > 50 and (slope_ix < 0.06 or slope < 0.06): # maximum distance between points but without sufficient slope - shift the initial point by 1m
                         elev_ini = gdf.at[i-49, 'ELEV_1']
                         distance_ini = gdf.at[i-49, 'distance']
+                        d3_distance = d3_distance - dd3_distances[i-50]
+                        segment_slope = np.delete(segment_slope, 0)
                         gdf2.drop(i, inplace=True)
                         #print('shifting')
 
