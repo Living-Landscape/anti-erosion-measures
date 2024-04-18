@@ -377,3 +377,12 @@ def rasterpixelstopoints(raster,path_dict): #convert raster to points
     
     return raster_to_points['OUTPUT']
 
+def correctvector(vector,path_dict): #correct vector
+    output_path = createoutputpathascii(path_dict,'corrected_vector')
+    corrected_vector = processing.run("native:fixgeometries",\
+                    {'INPUT':vector,\
+                    'METHOD':1,\
+                    'OUTPUT':os.path.join(output_path, 'output.gpkg')})
+    return corrected_vector['OUTPUT']
+
+
