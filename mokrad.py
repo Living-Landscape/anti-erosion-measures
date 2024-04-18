@@ -53,22 +53,31 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
     def initAlgorithm(self, config=None):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                'inputv', 'linie toků (vstupní vektor)', 
+                'inputv', 'water streams (input vector layer)', 
                 types=[QgsProcessing.TypeVectorAnyGeometry]
             )
         )
 
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                'kves','Konsolidovaná vrstva ekosytému', 
+                'kves','Consolidated ecosystem layer', 
             )
         )
 
         self.addParameter(
             QgsProcessingParameterBoolean(
                 self.CHECKBOX_PARAMETER,
-                'Filtrovat KVES ?',
+                'Filter CEL ?',
                 defaultValue=False
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'buffersize','size of the buffer around the water stream in meters', 
+                type=QgsProcessingParameterNumber.Integer,  # Type of the number 
+                minValue=1,  # Minimum allowed value
+                maxValue=100,  # Maximum allowed value
+                defaultValue=15  # Default value (optional)
             )
         )
         self.addParameter(
@@ -116,7 +125,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             features = layer.getFeatures()
 
             # The name you want to remove
-            names_to_keep = ['Buèiny', 'Doubravy a dubohabøiny','Hospodáøské lesy jehliènaté','Hospodáøské lesy listnaté','Hospodáøské lesy smíšené','Lužní a mokøadní lesy','Ovocný sad, zahrada']
+            names_to_keep = ['Buèiny', 'Doubravy a dubohabøiny','Hospodáøské lesy jehliènaté','Hospodáøské lesy listnaté','Hospodáøské lesy smíšené','Lužní a mokøadní lesy','Ovocný sad, zahrada','Nesouvislá zástavba','Skály, sutì','Souvislá zástavba','Sportovní a rekreaèní plochy','Prùmyslové a obchodní jednotky','Dopravní sí','Mìstské zelené plochy, okrasná zahrada, park, høbitov']
 
             # List to store ids of features to remove
             ids_to_remove = []
@@ -148,8 +157,11 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
         print(extent)
 
+        #correct the invalid geometries
+        results['correctedlines'] = qtool.correctvector(parameters['kves'],paths['tempfiles'])
+
         #cut the fields with the vector layer extent ""def clipfields(woods, extent, path_dict):""
-        results['clipedfields']= qtool.clipfields(parameters['kves'],extent,paths['tempfiles'])
+        results['clipedfields']= qtool.clipfields(results['correctedlines'],extent,paths['tempfiles'])
         print('clipedfields created')
 
         #dissolve the fields ""def dissolvefields(fields, path_dict):""
@@ -157,7 +169,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         print('dissolvedfields created')
 
         #buffer waterlines
-        results['bufferedlines'] = qtool.buffering(parameters['inputv'],10,paths['tempfiles'])
+        results['bufferedlines'] = qtool.buffering(parameters['inputv'],parameters['buffersize'],paths['tempfiles'])
         print('bufferedlines created')
         print(results['dissolvedfields'],results['bufferedlines'])
 

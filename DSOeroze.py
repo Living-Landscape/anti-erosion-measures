@@ -62,7 +62,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                'watershedbasins','Increase number to generate more significant streams', 
+                'watershedbasins','Minimum size of an exterior watershed basin in cells', 
                 type=QgsProcessingParameterNumber.Integer,  # Type of the number 
                 minValue=5,  # Minimum allowed value
                 maxValue=1000000,  # Maximum allowed value
@@ -78,17 +78,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterRasterLayer(
-                'inputwatershed','Cutted watershed', 
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                'visualize','1 = plot, 0 = no plot', 
-                type=QgsProcessingParameterNumber.Integer,  # Type of the number 
-                minValue=0,  # Minimum allowed value
-                maxValue=1,  # Maximum allowed value
-                defaultValue=1 # Default value (optional)   
+                'inputwatershed','Processed/Cutted watershed', 
+                optional=True
             )
         )
 
@@ -105,6 +96,16 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
                 'inputv','Polygon to cut fields', 
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'DSObuffer','size of the buffer around the DSO segments in meters', 
+                type=QgsProcessingParameterNumber.Integer,  # Type of the number 
+                minValue=1,  # Minimum allowed value
+                maxValue=100,  # Maximum allowed value
+                defaultValue=15  # Default value (optional)
             )
         )
 
@@ -270,7 +271,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         #print('linedpolygon created')
 
         #buffer the DSO 
-        results['bufferedpoints'] = qtool.buffering(filtered_points_DSO,30,paths['tempfiles'])
+        results['bufferedpoints'] = qtool.buffering(filtered_points_DSO,parameters['DSObuffer'],paths['tempfiles'])
         print('bufferedlines created')
 
         #dissolve the fields ""def dissolvefields(fields, path_dict):""

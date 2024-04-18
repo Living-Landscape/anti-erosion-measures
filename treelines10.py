@@ -3,6 +3,7 @@ from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingMultiStepFeedback
 from qgis.core import QgsProcessingParameterVectorLayer
 from qgis.core import QgsProcessingParameterRasterLayer
+from qgis.core import QgsProcessingParameterNumber
 from qgis.core import QgsProcessingParameterFeatureSink
 from qgis.core import QgsProcessingLayerPostProcessorInterface
 from qgis.core import QgsProcessingParameterFolderDestination
@@ -61,12 +62,45 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 'inputv', 'Choose input vector layer of field blocks', 
             )
         )
+
         self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                'output', 'output', 
-                type=QgsProcessing.TypeVectorPolygon
+            QgsProcessingParameterNumber(
+                'slopeA','Slope "A" for the maximal distance between tree lines',
+                type=QgsProcessingParameterNumber.Double,  # Type of the number 
+                defaultValue=0.07 # Default value (optional)  
+            ) 
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'distanceA','Treelines distance for slope "A" (slope B is between A and C)',
+                type=QgsProcessingParameterNumber.Double,  # Type of the number 
+                defaultValue=120 # Default value (optional)  
             )
         )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'distanceB','Treelines distance for slope "B"',
+                type=QgsProcessingParameterNumber.Double,  # Type of the number 
+                defaultValue=60 # Default value (optional)  
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'slopeC','Slope "C" for the minimum distance between tree lines',
+                type=QgsProcessingParameterNumber.Double,  # Type of the number 
+                defaultValue=0.12 # Default value (optional) 
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                'distanceC','Treelines distance for slope "C" (slope B is between A and C)',
+                type=QgsProcessingParameterNumber.Double,  # Type of the number 
+                defaultValue=40 # Default value (optional)  
+            )
+        )
+
         self.addParameter(
             QgsProcessingParameterFolderDestination(
                 'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'jakub', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
