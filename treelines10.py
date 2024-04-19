@@ -103,7 +103,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'jakub', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
             )  
         )
     
@@ -207,9 +207,14 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                             'BAND':1,\
                             'OUTPUT_HTML_FILE':'TEMPORARY_OUTPUT'})
             dem_max = dem_data['MAX'] - 1 # maximal value of input raster minus 1m 
+            #print(dem_max)
+            #time.sleep(2)
+
+            if dem_max > 8000:  #skip the fields with high elevation
+                continue
             dem_min = dem_data['MIN']   # minimal value of input raster minus 1m 
             iso_a = '-fl '
-            iso_b = str(dem_max)
+            iso_b = str(dem_max-2)
             isoline_elevation = ''.join([iso_a,iso_b])
             
             #create output folder with file shp
@@ -218,44 +223,46 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
 
             #isoline in defined elevation 
-            outputs['Izolinie1'] = processing.run("gdal:contour",\
-            #results = processing.run("gdal:contour",\
-                {'INPUT':rasterpart,\
-                'BAND':1,\
-                'INTERVAL':10,\
-                'FIELD_NAME':'ELEV',\
-                'CREATE_3D':False,\
-                'IGNORE_NODATA':False,\
-                'NODATA':None,\
-                'OFFSET':0,\
-                'EXTRA':isoline_elevation,\
-                'OUTPUT':os.path.join(output_path, 'output.shp')})
-            results['Output1'] = outputs['Izolinie1']['OUTPUT'] # results is and OUTPUT in Izolinie_1
-            isolines['isoline1'] = outputs['Izolinie1']['OUTPUT'] # save for following distance statistics
+            outputs['in_isoline'] = qtool.contourelevation(rasterpart,paths['contours'],isoline_elevation)
+            #results['Output1'] = outputs['Izolinie1']['OUTPUT'] # results is and OUTPUT in Izolinie_1
+            isolines['isoline1'] = outputs['in_isoline'] # save for following distance statistics
             # Access the temporary output layer using the key defined in the parameters dictionary
             #output_layer1 = results['Output1']
 
             # Create a QgsVectorLayer object from the output layer
-            vector_layer = QgsVectorLayer(os.path.join(output_path, 'output.shp'), "Contour", "ogr")
+            #vector_layer = QgsVectorLayer(os.path.join(output_path, 'output.shp'), "Contour", "ogr")
 
             # Add the vector layer to the current project
             #QgsProject.instance().addMapLayer(vector_layer)
-            print(results)
+            #print(results)
 
             ####### start loops from here
             attemt_counter = 0
             elev_new = dem_max - 5 # pocatecni nastrel nove hodnoty pro isolinii pro cycklus
             dis_tree_line = 200
+            file_check = 1
             slope_new = 0 # flat land
 
             # Define the three number intervals using numpy arrays
             dist_max = 130 # initial maximal distance for tree lines in low slope land
             dist_min = 110 # initial minimal distance for tree lines in low slope land
 
+
             while elev_new > dem_min+5: # condition to create new tree lines to the land lowest area
                 while dis_tree_line > dist_max or dis_tree_line < dist_min:
-                    iso_b = str(elev_new)
+
+                    if file_check == 0: # file check == 0.... need new elevation, file_check == 1.... elevation is ok 
+                        iso_a = '-fl '
+                        iso_b = str(elev_new-5)
+                        elev_new = elev_new - 10
+                        isoline_elevation = ''.join([iso_a,iso_b])
+                        #calculate new isoline1 contour at defined elevation
+                        outputs['in_isoline'] = qtool.contourelevation(rasterpart,paths['contours'],isoline_elevation)
+                        isolines['isoline1'] = outputs['in_isoline']
+                        file_check = 1 # good file assumtion    
+   
                     #isoline in defined elevation for distance comparison
+                    iso_b = str(elev_new)
                     isoline_elevation = ''.join([iso_a,iso_b])
                     
                     #calculate isoline2 contour at defined elevation
@@ -269,6 +276,13 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
                     #create a points with defined span on the vector line for distance comparison on isoline 1
                     results['output3'] = qtool.pointsalongline(isolines['isoline1'],paths['pointsalongline'])
+
+                    # contditions to minimum points to calculate distance 
+                    layer = QgsVectorLayer(results['output3'], 'Layer Name', 'ogr')
+                    if layer.featureCount() < 10:
+                        print('not enough points to calculate distance')
+                        file_check = 0
+                        continue
 
                     #edit a atribute table of points layer from isoline1
                     results['output4'] = qtool.deletecolumns(results['output3'],paths['deletecomlumn'])

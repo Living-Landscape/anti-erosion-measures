@@ -58,7 +58,7 @@ def contourelevation(raster,path_dict,elevation): #calculate a single countour i
     contour = processing.run("gdal:contour",\
                     {'INPUT':raster,\
                     'BAND':1,\
-                    'INTERVAL':10,\
+                    'INTERVAL':2,\
                     'FIELD_NAME':'ELEV',\
                     'CREATE_3D':False,\
                     'IGNORE_NODATA':False,\
@@ -384,5 +384,4 @@ def correctvector(vector,path_dict): #correct vector
                     'METHOD':1,\
                     'OUTPUT':os.path.join(output_path, 'output.gpkg')})
     return corrected_vector['OUTPUT']
-
 
