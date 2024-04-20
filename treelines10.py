@@ -150,7 +150,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         ymin = extent.yMinimum()
         ymax = extent.yMaximum()
         extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
-        print(extent)
+        print('extent of inpur raster layer',extent)
 
         #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
         results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['tempfiles'])
@@ -206,13 +206,19 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                             {'INPUT':rasterpart,\
                             'BAND':1,\
                             'OUTPUT_HTML_FILE':'TEMPORARY_OUTPUT'})
-            dem_max = dem_data['MAX'] - 1 # maximal value of input raster minus 1m 
-            #print(dem_max)
-            #time.sleep(2)
+            dem_max = dem_data['MAX'] # maximal value of input partial raster
+            
 
             if dem_max > 8000:  #skip the fields with high elevation
+                print('skipping field out of raster')
                 continue
-            dem_min = dem_data['MIN']   # minimal value of input raster minus 1m 
+            dem_min = dem_data['MIN']   # minimal value of input partial raster
+            print('DEM_max',dem_max,'DEM_min',dem_min)
+
+            if abs(dem_min-dem_max) < 15:
+                print('skipping field with low elevation difference')
+                continue 
+            #time.sleep(2)
             iso_a = '-fl '
             iso_b = str(dem_max-2)
             isoline_elevation = ''.join([iso_a,iso_b])
@@ -325,13 +331,11 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         slope_array = np.divide(dif,gdf["distance"])
                         slope = np.mean(slope_array)
                         #print(slope_array)
-                        print(dis_tree_line)
-                        print(slope)
                         #time.sleep(0.5)
                         print('attempt counter',attemt_counter)
                         if attemt_counter > 30:
                             sense = 0.001
-                            time.sleep(0.5)
+                            #time.sleep(0.5)
                         elif attemt_counter > 15:
                             sense = 0.003
                         elif attemt_counter > 10:
@@ -361,10 +365,10 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         print('attemt_counter',attemt_counter)
                         print('slope',slope)
                         print('dis_tree_line',dis_tree_line)
-                        print('dist_max',dist_max)
-                        print('dist_min',dist_min)
+                        print('dist_max',dist_max,'dist_min',dist_min)                        
+                        print('old elevation',elev_new)
 
-                        #time.sleep(0.7)
+                        time.sleep(0.7)
                         if attemt_counter > 40:
                             dis_tree_line = dist_max/2 + dist_min/2
                         else:
@@ -372,7 +376,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                                 elev_new = elev_new + inc
                             elif dis_tree_line < dist_min: 
                                 elev_new = elev_new - inc
-                        
+                        print('new elevation',elev_new)
+
                         ###layer = QgsVectorLayer(results['Output4'], 'Layer Name', 'ogr')
                         ###QgsProject.instance().addMapLayer(layer)
                 else:
