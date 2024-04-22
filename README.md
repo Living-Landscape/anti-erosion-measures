@@ -27,7 +27,7 @@ Cesty získané z webu https://overpass-turbo.eu/ rozdělí na jednotlivé segme
 
 ### Vstupy
 - DEM rastr 
-- Vektorová vrstva lesních cest dostupná z https://overpass-turbo.eu/
+- Vektorová vrstva lesních cest
 
 
 ### Export lesních cest: 
