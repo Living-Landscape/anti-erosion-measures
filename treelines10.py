@@ -352,18 +352,18 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                             elif attemt_counter < 5:
                                 sense = 0.02
                             
-                            if slope < 0.07:
-                                dist_max = 125 
-                                dist_min = 115
-                                inc = (dis_tree_line - 120)*sense
-                            elif slope > 0.07 and slope < 0.12:
-                                dist_max = 65
-                                dist_min = 55
-                                inc = (dis_tree_line - 60)*sense
-                            elif slope >0.12:
-                                dist_max = 45
-                                dist_min = 35
-                                inc = (dis_tree_line - 40)*sense
+                            if slope < parameters['slopeA']:
+                                dist_max = parameters['distanceA']+5 
+                                dist_min = parameters['distanceA']-5
+                                inc = (dis_tree_line - parameters['distanceA'])*sense
+                            elif slope > parameters['slopeA'] and slope < parameters['slopeC']:
+                                dist_max = parameters['distanceB']+5
+                                dist_min = parameters['distanceB']-5
+                                inc = (dis_tree_line - parameters['distanceB'])*sense
+                            elif slope >parameters['slopeC']:
+                                dist_max = parameters['distanceC']+5
+                                dist_min = parameters['distanceC']-5
+                                inc = (dis_tree_line - parameters['distanceC'])*sense
 
                             # decision making
                             attemt_counter = attemt_counter + 1    
