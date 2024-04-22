@@ -158,145 +158,135 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 dx_distances = np.diff(distance)  # 1m
                 dz_elevs = np.diff(elev)  # elevation difference between points i and i-1
                 dd3_distances = np.sqrt(dx_distances**2 + dz_elevs**2)  # 3D distance between points i and i-1
-                dsslopes = dz_elevs/dx_distances  # slope between points i and i-1
+                dslopes = dz_elevs/dx_distances  # slope between points i and i-1
                 
                 start_i = 0
                 
                 # loop over the rows
-                for i in range(1,rows):
-                    dx_distance = dx_distances[i-1]  # 1m
-                    dz_elev = dz_elevs[i-1]# elevation difference between points i and i-1
-                    dd3_distance = dd3_distances[i-1] # 3D distance between points i and i-1
-                    d3_distance = d3_distance + dd3_distance# add the 3D distance to the total 3d distance
-
-                    dslope = dsslopes[i-1] # slope between points i and i-1 
-                    segment_slope = np.append(segment_slope,dslope)  # add the slope to the array
-                 # calculate the average slope
-                    slope = abs(np.mean(segment_slope))
-
-                    slope_ix = (dz_elev - elev_ini)/(dx_distance - distance_ini) #slope between the first point and the current point
-
-                    #print('actual elev', gdf.at[i, 'ELEV_1'],'///','elev_ini',elev_ini,'///','actual distance', gdf.at[i, 'distance'],'///','distance_ini',distance_ini)
-
-                    #print('3d_distance=', d3_distance,'///','slope=',slope)
-
-                    #time.sleep()  # Pause for 1 second
-
-                    if i == rows:
-                        print('end of the line')
-                        break
-                    elif d3_distance > 18 and slope > 0.16: # (slope_ix > 0.16 or slope > 0.16):
-                        elev_ini = gdf.at[i, 'ELEV_1']
-                        distance_ini = gdf.at[i, 'distance']
-                        d3_distance = 0
-                        slope = 0
-                        segment_slope = np.array([])
-                        print('point1 was created')
-                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
-
-                        # Create a new GeoDataFrame for the current point
-                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
-                        # Define the output file path
-                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
-                        # Save the current point to a GeoPackage file
-                        current_point.to_file(output_file_path, driver="GPKG")
-
-                    elif d3_distance > 23 and slope > 0.14: #  (slope_ix > 0.14 or slope > 0.14):
-                        elev_ini = gdf.at[i, 'ELEV_1']
-                        distance_ini = gdf.at[i, 'distance']
-                        d3_distance = 0
-                        slope = 0
-                        segment_slope = np.array([])
-                        print('point2 was created')
-
-                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
-                        # Create a new GeoDataFrame for the current point
-                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
-                        # Define the output file path
-                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
-                        # Save the current point to a GeoPackage file
-                        current_point.to_file(output_file_path, driver="GPKG")                        
+                for j in range(1,rows):
+                    for i in range(start_i+1,start_i+51):
+                        if i == rows:
+                            break
+                        dx_distance = dx_distances[i-1]  # 1m
+                        dz_elev = dz_elevs[i-1]# elevation difference between points i and i-1
                         
-                    elif d3_distance > 27 and slope > 0.12: #  (slope_ix > 0.12 or slope > 0.12):
-                        elev_ini = gdf.at[i, 'ELEV_1']
-                        distance_ini = gdf.at[i, 'distance']
-                        d3_distance = 0
-                        slope = 0
-                        segment_slope = np.array([])
-                        print('point3 was created')
+                        d3_distance = dd3_distances[start_i:i].sum()# add the 3D distance to the total 3d distance
 
-                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
-                         # Create a new GeoDataFrame for the current point
-                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
-                        # Define the output file path
-                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
-                        # Save the current point to a GeoPackage file
-                        current_point.to_file(output_file_path, driver="GPKG")
+                        
+                        # segment_slope = np.append(segment_slope,dslope)  # add the slope to the array
+                        segment_slope = dslopes[start_i:i]  # add the slope to the array
+                     # calculate the average slope
+                        slope = abs(np.mean(segment_slope))
 
-                    elif d3_distance > 32 and slope > 0.10:  # (slope_ix > 0.10 or slope > 0.10):
-                        elev_ini = gdf.at[i, 'ELEV_1']
-                        distance_ini = gdf.at[i, 'distance']
-                        d3_distance = 0
-                        slope = 0
-                        segment_slope = np.array([])
-                        print('point4 was created')
-                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                        slope_ix = (dz_elev - dz_elevs[start_i])/(dx_distance - dx_distances[start_i]) #slope between the first point and the current point
 
-                        # Create a new GeoDataFrame for the current point
-                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
-                        # Define the output file path
-                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
-                        # Save the current point to a GeoPackage file
-                        current_point.to_file(output_file_path, driver="GPKG")
-   
-                    elif d3_distance > 40 and slope > 0.08: # (slope_ix > 0.08 or slope > 0.08)
-                        elev_ini = gdf.at[i, 'ELEV_1']
-                        distance_ini = gdf.at[i, 'distance']
-                        d3_distance = 0
-                        slope = 0
-                        segment_slope = np.array([])
-                        print('point5 was created')
-                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                        #print('actual elev', gdf.at[i, 'ELEV_1'],'///','elev_ini',elev_ini,'///','actual distance', gdf.at[i, 'distance'],'///','distance_ini',distance_ini)
 
-                        # Create a new GeoDataFrame for the current point
-                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
-                        # Define the output file path
-                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
-                        # Save the current point to a GeoPackage file
-                        current_point.to_file(output_file_path, driver="GPKG")
+                        #print('3d_distance=', d3_distance,'///','slope=',slope)
 
-                    elif d3_distance > 50 and  slope > 0.06: #  (slope_ix > 0.06 or slope > 0.06)
-                        elev_ini = gdf.at[i, 'ELEV_1']
-                        distance_ini = gdf.at[i, 'distance']
-                        d3_distance = 0
-                        slope = 0
-                        segment_slope = np.array([])
-                        print('point6 was created')
-                        #print whole i row
-                        #print(gdf.iloc[i])
-                        # append the row to the forest points dataframe 
-                        forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                        #time.sleep()  # Pause for 1 second
 
-                        current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
-                        # Define the output file path
-                        output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
-                        # Save the current point to a GeoPackage file
-                        current_point.to_file(output_file_path, driver="GPKG")
+                        
+                        if d3_distance > 18 and slope > 0.16: # (slope_ix > 0.16 or slope > 0.16):
+                            
+                            start_i = i
+                            print('point1 was created')
+                            forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                            # Create a new GeoDataFrame for the current point
+                            current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                            # Define the output file path
+                            output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                            # Save the current point to a GeoPackage file
+                            current_point.to_file(output_file_path, driver="GPKG")
+
+                        elif d3_distance > 23 and slope > 0.14: #  (slope_ix > 0.14 or slope > 0.14):
+                            
+                            start_i = i
+                            print('point2 was created')
+
+                            forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                            # Create a new GeoDataFrame for the current point
+                            current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                            # Define the output file path
+                            output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                            # Save the current point to a GeoPackage file
+                            current_point.to_file(output_file_path, driver="GPKG")                        
+                            
+                        elif d3_distance > 27 and slope > 0.12: #  (slope_ix > 0.12 or slope > 0.12):
+                            
+                            start_i = i
+                            print('point3 was created')
+
+                            forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+                            # Create a new GeoDataFrame for the current point
+                            current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                            # Define the output file path
+                            output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                            # Save the current point to a GeoPackage file
+                            current_point.to_file(output_file_path, driver="GPKG")
+
+                        elif d3_distance > 32 and slope > 0.10:  # (slope_ix > 0.10 or slope > 0.10):
+                        
+                            start_i = i
+                            print('point4 was created')
+                            forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                            # Create a new GeoDataFrame for the current point
+                            current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                            # Define the output file path
+                            output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                            # Save the current point to a GeoPackage file
+                            current_point.to_file(output_file_path, driver="GPKG")
+    
+                        elif d3_distance > 40 and slope > 0.08: # (slope_ix > 0.08 or slope > 0.08)
+                        
+                            start_i = i
+                            print('point5 was created')
+                            forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                            # Create a new GeoDataFrame for the current point
+                            current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                            # Define the output file path
+                            output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                            # Save the current point to a GeoPackage file
+                            current_point.to_file(output_file_path, driver="GPKG")
+
+                        elif d3_distance > 50 and  slope > 0.06: #  (slope_ix > 0.06 or slope > 0.06)
+                        
+                            start_i = i
+                            print('point6 was created')
+                            #print whole i row
+                            #print(gdf.iloc[i])
+                            # append the row to the forest points dataframe 
+                            forest_points = pd.concat([forest_points, gdf.iloc[i:i+1]], ignore_index=True)
+
+                            current_point = GeoDataFrame(gdf.iloc[i:i+1], crs=gdf.crs)
+                            # Define the output file path
+                            output_file_path = os.path.join(destination_dir_points, "point_{}.gpkg".format(i))
+                            # Save the current point to a GeoPackage file
+                            current_point.to_file(output_file_path, driver="GPKG")
 
 
-                    elif d3_distance > 50 and (slope_ix < 0.06 or slope < 0.06): # maximum distance between points but without sufficient slope - shift the initial point by 1m
-                        elev_ini = gdf.at[i-49, 'ELEV_1']
-                        distance_ini = gdf.at[i-49, 'distance']
-                        d3_distance = d3_distance - dd3_distances[i-50]
-                        segment_slope = np.delete(segment_slope, 0)
-                        gdf2.drop(i, inplace=True)
-                        #print('shifting')
+                        elif d3_distance > 50 and (slope_ix < 0.06 or slope < 0.06): # maximum distance between points but without sufficient slope - shift the initial point by 1m
+                            # gdf2.drop(i, inplace=True)
+                            start_i = start_i + 1
+                            break
+                            #print('shifting')
 
-                    else: 
-                        # smazay bod 
-                        gdf2.drop(i, inplace=True)
-                        #print('point was deleted')
-
+                        # else: 
+                        #     # smazay bod 
+                        #     pass
+                        #     # gdf2.drop(i, inplace=True)
+                        #     #print('point was deleted') 
+                    # print('start_i',start_i)
+                    # print('i',i)
+                    # print('rows',rows)
+                    # print('d3_distance',d3_distance)   
+                    # time.sleep(1)  # Pause for 1 second       
+                    if i >= rows:
+                        break
+                    
         # Convert the DataFrame to a GeoDataFrame
         print('tablecolumnsnames',forest_points.columns)
         new_gdf = gpd.GeoDataFrame(forest_points, geometry='geometry')  # Replace 'geometry' with your actual geometry column
