@@ -161,8 +161,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 dsslopes = dz_elevs/dx_distances  # slope between points i and i-1
                 
                 start_i = 0
-                print(dx_distances)
-                time.sleep(10)
+                
                 # loop over the rows
                 for i in range(1,rows):
                     dx_distance = dx_distances[i-1]  # 1m
