@@ -408,7 +408,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                         dis_tree_line = 200 # just a constant for new iteration 
                         isolines['isoline1'] = isolines['isoline2'] # swiching the targert and source countour
                         ##QgsProject.instance().addMapLayer(vector_layer)  
-                        print(elev_new)
+                        #print(elev_new)
 
                         simple_layer = qtool.simplifycontour(vector_layer,paths['simplifygeom'])
                         #QgsProject.instance().addMapLayer(simple_layer)
