@@ -72,7 +72,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                'distanceA','Treelines distance for slope "A" (slope B is between A and C)',
+                'distanceA','Treelines distance for slope "A" and smaller (slope B is between A and C)',
                 type=QgsProcessingParameterNumber.Double,  # Type of the number 
                 defaultValue=120 # Default value (optional)  
             )
@@ -80,7 +80,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterNumber(
-                'distanceB','Treelines distance for slope "B"',
+                'distanceB','Treelines distance between slopes "A" and "C"',
                 type=QgsProcessingParameterNumber.Double,  # Type of the number 
                 defaultValue=60 # Default value (optional)  
             )
@@ -95,7 +95,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                'distanceC','Treelines distance for slope "C" (slope B is between A and C)',
+                'distanceC','Treelines distance for slope "C" and greater (slope B is between A and C)',
                 type=QgsProcessingParameterNumber.Double,  # Type of the number 
                 defaultValue=40 # Default value (optional)  
             )
