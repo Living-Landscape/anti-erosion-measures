@@ -13,7 +13,7 @@ Script treelines10 vytváří stromové linie po určité vzdálenosti vypočít
 - Uživatelské parametry
 
 
-## DSOeroze
+## Algoritmus pro zatravnování drah soustředěného odtoku
 Ve skriptu DSOeroze jsou udolnice vyhledávány pomocí napočítaných odtokových linií pomocí nástroje GRASS.Pro výpočet odtokových linií využívá algoritmus systému GRASS, konkrétně funkci „r.watershed“. Vsupem je DMR raster, na který před samotným výpočtem aplikován filtr pro vyhlazení chyb DMR vrstvy. Jednotlivé napočítané segmenty odtokových linií jsou následně podrobeny analýze pro výpočet průměrného sklonu. Analýze odfiltruje úseky mimo polní plochy či ty úseky s nižším průměrným sklonem, než je definice uživatele. Výsledkem je jedna vrstva polygonů reprezentující zatravněné DSO. 
 
 ### Vstupy
