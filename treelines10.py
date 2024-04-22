@@ -312,24 +312,35 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
                         # calculate shortest lines between isolines
 
-                        results['output7'],output_path = qtool.calculateshortestlines(results['output4'],results['output6'],paths['shorteslines']) #shortest lines 
-
+                        results['output7'],output_path1 = qtool.calculateshortestlines(results['output4'],results['output6'],paths['shorteslines']) #shortest lines 
+                        results['output7_2'],output_path2 = qtool.calculateshortestlines(results['output6'],results['output4'],paths['shorteslines']) #shortest lines 
                         # Load the generated shapefile into the map
                         #layer = QgsVectorLayer(results['output7'], 'Shortest Lines', 'ogr')
                         #QgsProject.instance().addMapLayer(layer)
 
-                        dbffile = os.path.join(output_path, 'output.dbf') # load the atribute table
+                        dbffile = os.path.join(output_path1, 'output.dbf') # load the atribute table
+                        dbffile2 = os.path.join(output_path2, 'output.dbf')
+
                         gdf = gpd.read_file(dbffile) # read the atribute table
+                        gdf2 = gpd.read_file(dbffile2)
 
                         # Compute the difference between the 1st and 2nd column z-axis difference
                         dif = gdf["ELEV"] - gdf["ELEV_2"]
+                        dif2 = gdf2["ELEV"] - gdf2["ELEV_2"]
 
                         # Square the difference
                         dif_squared = dif ** 2
+                        dif_squared2 = dif2 ** 2
             
                         # Calculate the 3D distance using the pythagoras formula
                         gdf["result"] = np.sqrt(gdf["distance"]**2 - dif_squared)
+                        gdf2["result"] = np.sqrt(gdf2["distance"]**2 - dif_squared2)
+
                         dis_tree_line = round(gdf["result"].mean()) # get the mean value for new countour
+                        dis_tree_line2 = round(gdf2["result"].mean())
+
+                        dis_tree_line = (dis_tree_line + dis_tree_line2)/2
+
                         
                         if dis_tree_line < dist_max and dis_tree_line > dist_min:
                             break
