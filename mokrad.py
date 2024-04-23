@@ -35,10 +35,10 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
     CHECKBOX_PARAMETER = 'CHECKBOX_PARAMETER'  # Define the checkbox parameter
 
     def name(self):
-        return 'mokrad'
+        return 'Mokřadní plochy okolo vodních toků'
  
     def displayName(self):
-        return 'mokrad'
+        return 'Mokřadní plochy okolo vodních toků'
  
     def group(self):
         return 'RAGO scripts'
