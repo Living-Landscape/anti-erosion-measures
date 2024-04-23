@@ -30,10 +30,10 @@ import string
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
  
     def name(self):
-        return 'treelines9'
+        return 'Stromové Linie'
  
     def displayName(self):
-        return 'Tree lines'
+        return 'Stromové Linie'
  
     def group(self):
         return 'RAGO scripts'
