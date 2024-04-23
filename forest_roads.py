@@ -41,10 +41,10 @@ import math
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
  
     def name(self):
-        return 'forest roads'
+        return 'Terénní vlny na lesních a polních cestách'
  
     def displayName(self):
-        return 'forest roads'
+        return 'Terénní vlny na lesních a polních cestách'
  
     def group(self):
         return 'RAGO scripts'
