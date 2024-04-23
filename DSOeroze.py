@@ -33,10 +33,10 @@ import shutil
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
     CHECKBOX_PARAMETER = 'CHECKBOX_PARAMETER'  # Define the checkbox parameter
     def name(self):
-        return 'DSO'
+        return 'Zatravnění drah soustředěného odtoku'
  
     def displayName(self):
-        return 'DSO'
+        return 'Zatravnění drah soustředěného odtoku'
  
     def group(self):
         return 'RAGO scripts'
