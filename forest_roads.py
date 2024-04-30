@@ -34,6 +34,7 @@ import sys
 import numpy as np
 import inspect
 import math 
+import shutil
 
 
 
@@ -76,14 +77,13 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'Kuba-work', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'Kuba', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
             )
             
         )
 
 
     
-        
     def processAlgorithm(self, parameters, context, feedback):
 
         feedback = QgsProcessingMultiStepFeedback(1, feedback)
@@ -299,7 +299,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
 
 
-        paths['perpendicularlines'] = qtool.createoutputpathdir(paths['tempfiles'],'perpendicular_lines')
+        paths['perpendicularlines'] = qtool.createoutputpathdir(paths['tempfiles'],'perpendicular_line')
         paths['finallines'] = qtool.createoutputpathdir(paths['tempfiles'],'final_lines')
         #generate lines with angle 
         files = os.listdir(destination_dir_points)
@@ -367,7 +367,10 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             # Add layer to QGIS
             QgsProject.instance().addMapLayer(layer)
         
-
+        
+        shutil.rmtree(paths['tempfiles'],ignore_errors=True)
+        
+                
         return results
     
 
