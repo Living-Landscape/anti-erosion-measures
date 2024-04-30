@@ -21,7 +21,7 @@ def createoutputpathdir(pre_path,folder_name):  # Create a folder name based on 
     folder_name = ''.join([folder_name,folder_time]) #join folder name parts
 
     output_path_dir = os.path.join(pre_path, folder_name)
-    print(output_path_dir)
+    #print(output_path_dir)
     os.makedirs(output_path_dir, exist_ok=True) #creates a folder in directory
 
     return output_path_dir
@@ -35,7 +35,7 @@ def createoutputpathascii(pre_path,folder_name):  # Create a unique folder name 
     folder_name = ''.join([folder_time,folder_name,random_string])
 
     output_pathascii = os.path.join(pre_path, folder_name)
-    print(output_pathascii)
+    #print(output_pathascii)
     os.makedirs(output_pathascii, exist_ok=True) #creates a folder in directory
 
     return output_pathascii
