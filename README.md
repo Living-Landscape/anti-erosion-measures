@@ -1,7 +1,7 @@
 # water_project
 Repozitář je třeba vložit/naklonovat do složky scripts:
 - WIN: AppData\Roaming\QGIS\QGIS3\profiles\default\processing\scripts\
-- MAC: /Users/<username>/Library/Application Support/QGIS/QGIS3/profiles/default/processing/scripts
+- MAC: /Users/YOUR_USERNAME/Library/Application Support/QGIS/QGIS3/profiles/default/processing/scripts
 
 
 ## Genreování stromových linií
