@@ -40,6 +40,13 @@ def createoutputpathascii(pre_path,folder_name):  # Create a unique folder name 
 
     return output_pathascii
 
+def createfolder(pre_path,folder_name):  # Create a folder name based on the timestamp and defined name
+
+    output_pathascii = os.path.join(pre_path, folder_name)
+    os.makedirs(output_pathascii, exist_ok=True) #creates a folder in directory
+
+    return output_pathascii
+
 def simplifycontour(contour,path_dict): #simplify contour
 
     output_path = createoutputpathascii(path_dict,'simplified_geometry')
@@ -218,7 +225,7 @@ def cutraster(raster,polygon,path_dict):  #cut raster by polygon
     
     return cut_raster['OUTPUT']
 
-def  rastertopolygon(raster,path_dict): #convert raster to polygon
+def rastertopolygon(raster,path_dict): #convert raster to polygon
     output_path = createoutputpathascii(path_dict,'raster_to_polygon')
     raster_to_polygon = processing.run("gdal:polygonize",\
                     {'INPUT':raster,\
@@ -384,4 +391,27 @@ def correctvector(vector,path_dict): #correct vector
                     'METHOD':1,\
                     'OUTPUT':os.path.join(output_path, 'output.gpkg')})
     return corrected_vector['OUTPUT']
+
+def rastertopolygon(raster,path_dict): #convert raster to polygon
+    output_path = createoutputpathascii(path_dict,'raster_to_polygon')
+    raster_to_polygon = processing.run("gdal:polygonize",\
+                    {'INPUT':raster,\
+                    'BAND':1,\
+                    'FIELD':'DN',\
+                    'EIGHT_CONNECTEDNESS':False,\
+                    'EXTRA':'',\
+                    'OUTPUT':os.path.join(output_path, 'output.gpkg')})
+    
+    return raster_to_polygon['OUTPUT']
+
+def cutthefieldblocks(vector,mask,path_dict): #cut the field block
+    output_path = createoutputpathascii(path_dict,'cut_field_block')
+    cut_field_block = processing.run("native:clip", {
+        'INPUT': vector,
+        'OVERLAY': mask,
+        'OUTPUT': os.path.join(output_path, 'output.gpkg')
+    })
+    return cut_field_block['OUTPUT']
+
+
 
