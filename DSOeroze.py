@@ -111,7 +111,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterFolderDestination(
-                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'spravce', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
+                'mainfolder', 'Choose folder with scripts and outputdata destination',defaultValue=os.path.join('C:\\', 'Users', 'jakub', 'AppData', 'Roaming', 'QGIS', 'QGIS3', 'profiles', 'default', 'processing', 'scripts', 'anti-erosion-measures'), 
             )
             
         )
@@ -130,12 +130,19 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         print(parameters['mainfolder'])
         import qgis_tools as qtool 
 
-        paths['tempfiles'] = qtool.createoutputpathdir(parameters['mainfolder'],'temp_files')
-        paths['gpkgs'] = qtool.createoutputpathdir(paths['tempfiles'],'separated_points')
+        paths['mastertemp'] = qtool.createfolder(parameters['mainfolder'],'temporary files')
+
+        paths['tempfiles'] = qtool.createoutputpathdir(paths['mastertemp'],'temp_files')
+
+        paths['mainresults'] = qtool.createfolder(paths['tempfiles'],'main results')
+        paths['calculations'] = qtool.createfolder(paths['tempfiles'],'calculations')
+
+        paths['gpkgs'] = qtool.createoutputpathdir(paths['calculations'],'separated points')
+        
         limit_slope = self.parameterAsDouble(parameters, 'limit_slope', context)
 
         # Define the destination path for filtered raster files with greater slope
-        dest_path = qtool.createoutputpathdir(paths['tempfiles'],'filtered_raster')
+        dest_path = qtool.createoutputpathdir(paths['calculations'],'filtered_raster')
 
         # Get the value of the checkbox
         checkbox_value = self.parameterAsBool(parameters, self.CHECKBOX_PARAMETER, context)
@@ -153,31 +160,35 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         if checkbox_value:
             
             #create depresionless DEM
-            results['depresionless_dem'] = qtool.filterDEM(parameters['inputr'],paths['tempfiles'])
+            results['depresionless_dem'] = qtool.filterDEM(parameters['inputr'],paths['calculations'])
             print('depresionless_dem created')
 
             #calculate the watershed
-            results['watershed'] = qtool.watershed(results['depresionless_dem'],paths['tempfiles'],parameters['watershedbasins']) 
+            results['watershed'] = qtool.watershed(results['depresionless_dem'],paths['mainresults'],parameters['watershedbasins']) 
             print('watershed created')
 
         else: 
-            #for not calculating watershed 
+            #for not calculating  watershed 
             results['watershed'] = parameters['inputwatershed']
 
-        #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
-        results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['tempfiles'])
+        #cut the fields with the raster boundary""def clipfields(fields, raster, path_dict):""
+        results['rastercontour']= qtool.rastertopolygon(parameters['inputr'],paths['calculations'])
         print('clipedfields created')
 
         #dissolve the fields ""def dissolvefields(fields, path_dict):""
-        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['tempfiles'])
+        results['dissolvedfields'] = qtool.dissolvefields(results['rastercontour'],paths['calculations'])
         print('dissolvedfields created')
+        
+
+        results['clippedfields'] = qtool.cutthefieldblocks(parameters['inputv'],results['dissolvedfields'],paths['calculations'])
+        print('clippedfields created')
 
         #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
-        results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['dissolvedfields'],paths['tempfiles'])
+        results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['clippedfields'],paths['calculations'])
         print('cuttedwatershed created')
 
         #raster pixels to points
-        results['rasterpixels'] = qtool.rasterpixelstopoints(results['cuttedwatershed'],paths['tempfiles'])
+        results['rasterpixels'] = qtool.rasterpixelstopoints(results['cuttedwatershed'],paths['calculations'])
 
         gdf = gpd.read_file(results['rasterpixels'])
         print('gdf',gdf)
@@ -205,7 +216,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             layer = QgsVectorLayer(os.path.join(paths['gpkgs'], gpkg_file), gpkg_file, 'ogr')
 
             #sample the raster acording to the DEM raster 
-            sampled_points= qtool.rastersampling(parameters['inputr'],layer,paths['tempfiles'])
+            sampled_points= qtool.rastersampling(parameters['inputr'],layer,paths['calculations'])
             
             gdf = gpd.read_file(sampled_points['OUTPUT'])
 
@@ -271,11 +282,11 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         #print('linedpolygon created')
 
         #buffer the DSO 
-        results['bufferedpoints'] = qtool.buffering(filtered_points_DSO,parameters['DSObuffer'],paths['tempfiles'])
+        results['bufferedpoints'] = qtool.buffering(filtered_points_DSO,parameters['DSObuffer'],paths['calculations'])
         print('bufferedlines created')
 
         #dissolve the fields ""def dissolvefields(fields, path_dict):""
-        results['dissolvedpolygonpoints'] = qtool.dissolvefields(results['bufferedpoints'][1],dest_path)
+        results['dissolvedpolygonpoints'] = qtool.dissolvefields(results['bufferedpoints'][1],paths['mainresults'])
         print('dissolvedfields created')        
         
 
@@ -290,15 +301,6 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         else:
             # Add layer to QGIS
             QgsProject.instance().addMapLayer(layer)
-
-
-
-            
-
-
-
-
-
 
         return results
     

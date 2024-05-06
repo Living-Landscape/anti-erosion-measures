@@ -129,20 +129,24 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         #from qgis_tools import simplifycontour, createoutputpathdir, createoutputpathascii, contourelevation, pointsalongline, deletecolumns, calculateshortestlines, buffering
 
         #define dictionary paths 
-        paths['default'] = parameters['mainfolder']
+        paths['mastertemp'] = qtool.createfolder(parameters['mainfolder'],'temporary files')
 
-        paths['tempfiles'] = qtool.createoutputpathdir(paths['default'],'temp_files') 
+        paths['tempfiles'] = qtool.createoutputpathdir(paths['mastertemp'],'temp_files')
 
-        paths['contours'] = qtool.createoutputpathdir(paths['tempfiles'],'contours')    
-        paths['pointsalongline'] = qtool.createoutputpathdir(paths['tempfiles'],'points_along_line')
-        paths['deletecomlumn'] = qtool.createoutputpathdir(paths['tempfiles'],'delete_column')
-        paths['buffer'] = qtool.createoutputpathdir(paths['tempfiles'],'buffer_zones')
-        paths['simplifygeom'] = qtool.createoutputpathdir(paths['tempfiles'],'simplifyed_geometries')
-        paths['shorteslines'] = qtool.createoutputpathdir(paths['tempfiles'],'shortest_lines')
-        paths['validlines'] = qtool.createoutputpathdir(paths['tempfiles'],'valiedated_lines')
-        paths['offsetlines'] = qtool.createoutputpathdir(paths['tempfiles'],'offseted_lines')
-        paths['treelines'] = qtool.createoutputpathdir(paths['tempfiles'],'created_treelines')
-        paths['errorfiles'] = qtool.createoutputpathdir(paths['tempfiles'],'error_files')
+        paths['mainresults'] = qtool.createfolder(paths['tempfiles'],'main results')
+        paths['calculations'] = qtool.createfolder(paths['tempfiles'],'calculations')
+
+
+        paths['contours'] = qtool.createoutputpathdir(paths['calculations'],'contours')    
+        paths['pointsalongline'] = qtool.createoutputpathdir(paths['calculations'],'points_along_line')
+        paths['deletecomlumn'] = qtool.createoutputpathdir(paths['calculations'],'delete_column')
+        paths['buffer'] = qtool.createoutputpathdir(paths['calculations'],'buffer_zones')
+        paths['simplifygeom'] = qtool.createoutputpathdir(paths['calculations'],'simplifyed_geometries')
+        paths['shorteslines'] = qtool.createoutputpathdir(paths['calculations'],'shortest_lines')
+        paths['validlines'] = qtool.createoutputpathdir(paths['calculations'],'valiedated_lines')
+        paths['offsetlines'] = qtool.createoutputpathdir(paths['calculations'],'offseted_lines')
+        paths['treelines'] = qtool.createoutputpathdir(paths['calculations'],'created_treelines')
+        paths['errorfiles'] = qtool.createoutputpathdir(paths['calculations'],'error_files')
 
         # Get the input raster layer to define layer extent
         raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
@@ -155,18 +159,31 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
         print('extent of inpur raster layer',extent)
 
-        #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
-        results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['tempfiles'])
+
+
+
+        #create a polygon from raster DEM layer to get landscape boundary
+        results['rastercontour']= qtool.rastertopolygon(parameters['inputr'],paths['calculations'])
         print('clipedfields created')
 
-        #dissolve the fields ""def dissolvefields(fields, path_dict):""
-        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['tempfiles'])
+        #dissolve the polygonized raster layer
+        results['dissolvedraster'] = qtool.dissolvefields(results['rastercontour'],paths['calculations'])
         print('dissolvedfields created')
 
-        results['onepolygon'] = qtool.multipartpartpolygon(results['dissolvedfields'],paths['tempfiles'])
+        #correct the dissolved raster layer
+        results['correcteddissolvedfields'] = qtool.correctvector(results['dissolvedraster'],paths['calculations'])
+        print('correcteddissolvedfields created')
+
+        #cut the fields with the raster layer polygon to get the mask to cut the fileds one by one
+        results['clipedfields'] = qtool.cutthefieldblocks(parameters['inputv'],results['correcteddissolvedfields'],paths['calculations'])
+        print('clipedfields created')
+
+        #dissolve the fields with too close boundaries
+        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['calculations'])
+        print('dissolvedfields created')
+
+        results['onepolygon'] = qtool.multipartpartpolygon(results['dissolvedfields'],paths['calculations'])
         
-
-
 
         def add_index_to_attributes(layer):
             # Add a new field to the layer
@@ -190,7 +207,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         results['indexedpolygon'] = add_index_to_attributes(layer)
 
         #separate vecotr layer, save all part to separate shp files
-        results['separated_polygons'] = qtool.separatepolygons(results['onepolygon'],paths['tempfiles'])
+        results['separated_polygons'] = qtool.separatepolygons(results['onepolygon'],paths['calculations'])
         print(results['separated_polygons'])
 
         files = os.listdir(results['separated_polygons'])
@@ -203,7 +220,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
                 poly_path = os.path.join(results['separated_polygons'],file)
 
 
-                rasterpart = qtool.cutraster(parameters['inputr'],poly_path,paths['tempfiles']) # cut raster to the extent of the field
+                rasterpart = qtool.cutraster(parameters['inputr'],poly_path,paths['calculations']) # cut raster to the extent of the field
 
                 # statistic of raster layer to get the highest point for alg start 
                 dem_data = processing.run("native:rasterlayerstatistics",\
@@ -455,7 +472,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             all_layers = pd.concat(layers, ignore_index=True)
 
         # Save the all_layers GeoDataFrame to a file
-        output_path = os.path.join(paths['treelines'], 'all_layers.gpkg')
+        output_path = os.path.join(paths['mainresults'], 'all_layers.gpkg')
         all_layers.to_file(output_path, driver='GPKG')
 
         # Create a new QgsVectorLayer
