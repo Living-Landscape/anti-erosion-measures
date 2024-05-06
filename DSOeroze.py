@@ -168,7 +168,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             print('watershed created')
 
         else: 
-            #for not calculating watershed 
+            #for not calculating  watershed 
             results['watershed'] = parameters['inputwatershed']
 
         #cut the fields with the raster boundary""def clipfields(fields, raster, path_dict):""

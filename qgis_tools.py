@@ -363,7 +363,7 @@ def rastersampling(raster, vector, path_dict): #sample raster by vector
     
     return sampled_raster
 
-#mokrady
+# mokrady
 def fielddifference(bufferline,forest,path_dict): #difference between two fields
     output_path = createoutputpathdir(path_dict,'field_difference')
     field_difference = processing.run("native:difference", {
