@@ -31,7 +31,8 @@ import numpy as np
 import shutil
 
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
-    CHECKBOX_PARAMETER = 'CHECKBOX_PARAMETER'  # Define the checkbox parameter
+    CHECKBOX_PARAMETER_watershed = 'CHECKBOX_PARAMETER_watershed' 
+    CHECKBOX_PARAMETER_apple = 'CHECKBOX_PARAMETER_apple' # Define the checkbox parameter
     def name(self):
         return 'Zatravnění drah soustředěného odtoku'
  
@@ -71,8 +72,15 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterBoolean(
-                self.CHECKBOX_PARAMETER,
+                self.CHECKBOX_PARAMETER_watershed,
                 'Calculate Watershed ?',
+                defaultValue=False
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.CHECKBOX_PARAMETER_apple,
+                'Apple User ?',
                 defaultValue=False
             )
         )
@@ -145,7 +153,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         dest_path = qtool.createoutputpathdir(paths['calculations'],'filtered_raster')
 
         # Get the value of the checkbox
-        checkbox_value = self.parameterAsBool(parameters, self.CHECKBOX_PARAMETER, context)
+        checkbox_value_watershed = self.parameterAsBool(parameters, self.CHECKBOX_PARAMETER_watershed, context)
+        checkbox_value_apple = self.parameterAsBool(parameters, self.CHECKBOX_PARAMETER_apple, context)
 
         raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
 
@@ -157,7 +166,7 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
         print(extent)
 
-        if checkbox_value:
+        if checkbox_value_watershed:
             
             #create depresionless DEM
             results['depresionless_dem'] = qtool.filterDEM(parameters['inputr'],paths['calculations'])
@@ -171,21 +180,35 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             #for not calculating  watershed 
             results['watershed'] = parameters['inputwatershed']
 
-        #cut the fields with the raster boundary""def clipfields(fields, raster, path_dict):""
-        results['rastercontour']= qtool.rastertopolygon(parameters['inputr'],paths['calculations'])
-        print('clipedfields created')
+        if checkbox_value_apple:
+            #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
+            results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['calculations'])
+            print('clipedfields created')
 
-        #dissolve the fields ""def dissolvefields(fields, path_dict):""
-        results['dissolvedfields'] = qtool.dissolvefields(results['rastercontour'],paths['calculations'])
-        print('dissolvedfields created')
-        
+            #dissolve the fields ""def dissolvefields(fields, path_dict):""
+            results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['calculations'])
+            print('dissolvedfields created')
 
-        results['clippedfields'] = qtool.cutthefieldblocks(parameters['inputv'],results['dissolvedfields'],paths['calculations'])
-        print('clippedfields created')
+            #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
+            results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['dissolvedfields'],paths['calculations'])
+            print('cuttedwatershed created')
 
-        #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
-        results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['clippedfields'],paths['calculations'])
-        print('cuttedwatershed created')
+        else: 
+            #cut the fields with the raster boundary""def clipfields(fields, raster, path_dict):""
+            results['rastercontour']= qtool.rastertopolygon(parameters['inputr'],paths['calculations'])
+            print('clipedfields created')
+
+            #dissolve the fields ""def dissolvefields(fields, path_dict):""
+            results['dissolvedfields'] = qtool.dissolvefields(results['rastercontour'],paths['calculations'])
+            print('dissolvedfields created')
+            
+
+            results['clippedfields'] = qtool.cutthefieldblocks(parameters['inputv'],results['dissolvedfields'],paths['calculations'])
+            print('clippedfields created')
+
+            #cut the watershed with the field polygon ""def cutraster(raster,polygon,path_dict):""
+            results['cuttedwatershed'] = qtool.cutraster(results['watershed'],results['clippedfields'],paths['calculations'])
+            print('cuttedwatershed created')
 
         #raster pixels to points
         results['rasterpixels'] = qtool.rasterpixelstopoints(results['cuttedwatershed'],paths['calculations'])

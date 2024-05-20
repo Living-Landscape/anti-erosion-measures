@@ -11,6 +11,7 @@ from qgis.core import QgsProject
 from qgis.core import QgsVectorLayer, QgsSymbol, QgsSingleSymbolRenderer
 from qgis.core import QgsVectorFileWriter, QgsField
 from PyQt5.QtCore import QVariant
+from qgis.core import QgsProcessingParameterBoolean
 
 from PyQt5.QtGui import QColor  # Import QColor from PyQt5
 from datetime import datetime
@@ -30,7 +31,7 @@ import shutil
 
 
 class IsoTreelinesAlgo(QgsProcessingAlgorithm):
- 
+    CHECKBOX_PARAMETER_apple = 'CHECKBOX_PARAMETER_apple' # Define the checkbox parameter
     def name(self):
         return 'Stromové Linie'
  
@@ -48,12 +49,8 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
          
      #dialog to select inputs and outputs    
     def initAlgorithm(self, config=None):
-        '''self.addParameter(
-            QgsProcessingParameterVectorLayer(
-                'inputv', 'Vstupní vektor', 
-                types=[QgsProcessing.TypeVectorAnyGeometry]
-            )
-        )'''
+        
+
         self.addParameter(
             QgsProcessingParameterRasterLayer(
                 'inputr', 'Choose input raster layer', 
@@ -65,6 +62,13 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
             )
         )
 
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.CHECKBOX_PARAMETER_apple,
+                'Apple User ?',
+                defaultValue=False
+            )
+        )
         self.addParameter(
             QgsProcessingParameterNumber(
                 'slopeA','Slope "A" for the maximal distance between tree lines',
@@ -148,41 +152,53 @@ class IsoTreelinesAlgo(QgsProcessingAlgorithm):
         paths['treelines'] = qtool.createoutputpathdir(paths['calculations'],'created_treelines')
         paths['errorfiles'] = qtool.createoutputpathdir(paths['calculations'],'error_files')
 
+        checkbox_value_apple= self.parameterAsBool(parameters, self.CHECKBOX_PARAMETER_apple, context)
+
         # Get the input raster layer to define layer extent
         raster_layer = self.parameterAsRasterLayer(parameters, 'inputr', context)
+        
+        if checkbox_value_apple == True:
+            extent = raster_layer.extent()
+            xmin = extent.xMinimum()
+            xmax = extent.xMaximum()
+            ymin = extent.yMinimum()
+            ymax = extent.yMaximum()
+            extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
+            print('extent of inpur raster layer',extent)
 
-        extent = raster_layer.extent()
-        xmin = extent.xMinimum()
-        xmax = extent.xMaximum()
-        ymin = extent.yMinimum()
-        ymax = extent.yMaximum()
-        extent = '{},{},{},{}'.format(xmin, xmax, ymin, ymax)
-        print('extent of inpur raster layer',extent)
+        
+            #cut the fields with the raster layer extent ""def clipfields(fields, raster, path_dict):""
+            results['clipedfields']= qtool.clipfields(parameters['inputv'],extent,paths['calculations'])
+            print('clipedfields created')
 
+            #dissolve the fields ""def dissolvefields(fields, path_dict):""
+            results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['calculations'])
+            print('dissolvedfields created')
 
+            results['onepolygon'] = qtool.multipartpartpolygon(results['dissolvedfields'],paths['calculations'])
 
+        else:
+            #create a polygon from raster DEM layer to get landscape boundary
+            results['rastercontour']= qtool.rastertopolygon(parameters['inputr'],paths['calculations'])
+            print('clipedfields created')
 
-        #create a polygon from raster DEM layer to get landscape boundary
-        results['rastercontour']= qtool.rastertopolygon(parameters['inputr'],paths['calculations'])
-        print('clipedfields created')
+            #dissolve the polygonized raster layer
+            results['dissolvedraster'] = qtool.dissolvefields(results['rastercontour'],paths['calculations'])
+            print('dissolvedfields created')
 
-        #dissolve the polygonized raster layer
-        results['dissolvedraster'] = qtool.dissolvefields(results['rastercontour'],paths['calculations'])
-        print('dissolvedfields created')
+            #correct the dissolved raster layer
+            results['correcteddissolvedfields'] = qtool.correctvector(results['dissolvedraster'],paths['calculations'])
+            print('correcteddissolvedfields created')
 
-        #correct the dissolved raster layer
-        results['correcteddissolvedfields'] = qtool.correctvector(results['dissolvedraster'],paths['calculations'])
-        print('correcteddissolvedfields created')
+            #cut the fields with the raster layer polygon to get the mask to cut the fileds one by one
+            results['clipedfields'] = qtool.cutthefieldblocks(parameters['inputv'],results['correcteddissolvedfields'],paths['calculations'])
+            print('clipedfields created')
 
-        #cut the fields with the raster layer polygon to get the mask to cut the fileds one by one
-        results['clipedfields'] = qtool.cutthefieldblocks(parameters['inputv'],results['correcteddissolvedfields'],paths['calculations'])
-        print('clipedfields created')
+            #dissolve the fields with too close boundaries
+            results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['calculations'])
+            print('dissolvedfields created')
 
-        #dissolve the fields with too close boundaries
-        results['dissolvedfields'] = qtool.dissolvefields(results['clipedfields'],paths['calculations'])
-        print('dissolvedfields created')
-
-        results['onepolygon'] = qtool.multipartpartpolygon(results['dissolvedfields'],paths['calculations'])
+            results['onepolygon'] = qtool.multipartpartpolygon(results['dissolvedfields'],paths['calculations'])
         
 
         def add_index_to_attributes(layer):
